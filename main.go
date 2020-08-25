@@ -17,23 +17,11 @@ func main() {
 	// load data
 	loader := newBr(cluster)
 	err := loader.load()
-	if err != nil {
-		cluster.reportErr(err)
-		return
-	}
 
 	// bench
 	bench := newScaleOut(cluster)
 	err = bench.run()
-	if err != nil {
-		cluster.reportErr(err)
-		return
-	}
 
-	// report
+	// sendReport
 	err = bench.collect()
-	if err != nil {
-		cluster.reportErr(err)
-		return
-	}
 }

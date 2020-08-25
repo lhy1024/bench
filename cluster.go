@@ -3,18 +3,9 @@ package main
 import "net/http"
 
 const (
-	stores     = "/stores"       // post request
-	testStatus = "/tests/status" // post status kind
-	report     = "/report"       // post report
-	err        = "/error"        // post err msg
-)
-
-type statusKind uint64
-
-const (
-	startLoad statusKind = iota
-	startBench
-	finishBench
+	nodes   = "/nodes"   // Get: get all node status; Post: scale in or scale out
+	reports = "/reports" // Get: get last sendReport; Post: add new sendReport
+	results = "/results" // Post: markdown string
 )
 
 type storageKind uint64
@@ -24,8 +15,7 @@ const (
 	sharedNvme
 )
 
-type request struct {
-	id      uint64
+type node struct {
 	cpu     uint64 // example 40c
 	mem     uint64 // example 160G
 	disk    uint64 // example 1024G
@@ -33,7 +23,7 @@ type request struct {
 }
 
 type cluster struct {
-	id         uint64 // make convenient api server to distinguish different benches
+	id         uint64
 	tidb       string
 	pd         string
 	prometheus string
@@ -52,19 +42,44 @@ func newCluster(id *uint64, tidb, pd, prometheus, api *string) *cluster {
 	}
 }
 
-func (c *cluster) addStore(req *request) error {
+func (c *cluster) getCurrentTiKV() node {
+	// todo
+	return node{}
+}
+
+func (c *cluster) getAvailableNodes(n node) []node {
+	// todo
+	return []node{}
+}
+
+func (c *cluster) addStore(n node) error {
 	// todo
 	return nil
 }
 
-func (c *cluster) changeStatus(s statusKind) {
-
+func (c *cluster) addStores(num uint64) error {
+	tikv := c.getCurrentTiKV()
+	nodes := c.getAvailableNodes(tikv)
+	if len(nodes) != 0 {
+		err := c.addStore(tikv)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (c *cluster) reportErr(err error) {
-
+func (c *cluster) sendReport(report string) error {
+	// todo
+	return nil
 }
 
-func (c *cluster) report() {
+func (c *cluster) sendResult(markdown string) error {
+	// todo
+	return nil
+}
 
+func (c *cluster) getLastReport() (string, error) {
+	// todo
+	return "", nil
 }

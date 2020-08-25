@@ -9,7 +9,6 @@ type ycsb struct {
 }
 
 func newYcsb(c *cluster) *ycsb {
-	c.changeStatus(startLoad)
 	return &ycsb{
 		c: c,
 	}
@@ -25,13 +24,12 @@ type br struct {
 }
 
 func newBr(c *cluster) *ycsb {
-	c.changeStatus(startLoad)
 	return &ycsb{
 		c: c,
 	}
 }
 
 func (l *br) load() error {
-	// todo
+	// todo @zeyuan
 	return nil
 }
