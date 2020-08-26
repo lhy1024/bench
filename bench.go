@@ -30,33 +30,32 @@ func (s *scaleOut) run() error {
 }
 
 func (s *scaleOut) isBalance() bool {
-	// todo get data from prometheus
-	// todo @zeyuan
+	// todo @zeyuan get data from prometheus
 	return false
 }
 
 func (s *scaleOut) collect() error {
-	// create report
-	report, err := s.createReport()
+	// create report data
+	data, err := s.createReport()
 	if err != nil {
 		return err
 	}
 
-	// try get last report
-	lastReport, err := s.c.getLastReport()
+	// try get last data
+	lastReportData, err := s.c.getLastReportData()
 	if err != nil {
 		return err
 	}
 
-	// send report
+	// send data
 	var plainText string
-	if len(lastReport) == 0 { //first send
+	if len(lastReportData) == 0 { //first send
 		plainText = ""
 	} else { //second send
-		plainText = s.mergeReport(lastReport, report)
+		plainText = s.mergeReport(lastReportData, data)
 	}
 
-	return s.c.sendReport(report, plainText)
+	return s.c.sendReport(data, plainText)
 }
 
 func (s *scaleOut) createReport() (string, error) {

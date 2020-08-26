@@ -2,8 +2,10 @@ package main
 
 import (
 	"os"
-)
 
+	"github.com/pingcap/log"
+	"go.uber.org/zap"
+)
 
 func main() {
 	var clusterName = os.Getenv("CLUSTER_NAME")
@@ -16,11 +18,20 @@ func main() {
 	// load data
 	loader := newBr(cluster)
 	err := loader.load()
+	if err != nil {
+		log.Fatal("failed when load", zap.Error(err))
+	}
 
 	// bench
 	bench := newScaleOut(cluster)
 	err = bench.run()
+	if err != nil {
+		log.Fatal("failed when bench", zap.Error(err))
+	}
 
 	// sendReport
 	err = bench.collect()
+	if err != nil {
+		log.Fatal("failed when collect report", zap.Error(err))
+	}
 }
