@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pingcap/errors"
 	"net/http"
 	"strings"
+
+	"github.com/jinzhu/gorm"
+	"github.com/pingcap/errors"
 )
 
 const (
@@ -20,15 +22,15 @@ type Spec struct {
 	Disk string
 }
 
-// todo update after @junpeng
 type ResourceRequestItem struct {
-	ItemID uint   `gorm:"column:item_id;unique;not null"`
-	Spec   Spec   `gorm:"column:spec;type:longtext;not null"`
-	Status string `gorm:"column:status;type:varchar(255);not null"`
-	RRID   uint   `gorm:"column:rr_id;not null"`
-	RID    uint   `gorm:"column:r_id;not null"`
+	gorm.Model
+	ItemID uint   `gorm:"column:item_id;unique;not null" json:"item_id"`
+	Spec   Spec   `gorm:"column:spec;type:longtext;not null" json:"spec"`
+	Status string `gorm:"column:status;type:varchar(255);not null" json:"status"`
+	RRID   uint   `gorm:"column:rr_id;not null" json:"rr_id"`
+	RID    uint   `gorm:"column:r_id;not null" json:"r_id"`
 	// Components records which *_servers are serving on this machine
-	Components string `gorm:"column:components"`
+	Components string `gorm:"column:components" json:"components"`
 }
 
 func (r *ResourceRequestItem) isAvailable(toScale string) bool {
@@ -42,9 +44,10 @@ func (r *ResourceRequestItem) isAvailable(toScale string) bool {
 }
 
 type WorkloadReport struct {
-	CRID      uint    `json:"cr_id"`
-	Data      string  `json:"data"`
-	PlainText *string `json:"plaintext,omitempty"`
+	gorm.Model
+	CRID      uint    `gorm:"column:cr_id;not null" json:"cr_id"`
+	Data      string  `gorm:"column:result;type:longtext;not null" json:"data"`
+	PlainText *string `gorm:"column:plaintext" json:"plaintext,omitempty"`
 }
 
 type cluster struct {
@@ -88,7 +91,7 @@ func (c *cluster) getAvailableResourceID(component string) (uint, error) {
 	// select available
 	for _, resource := range resources {
 		if resource.isAvailable(component) {
-			return resource.ItemID, nil
+			return resource.ID, nil
 		}
 	}
 

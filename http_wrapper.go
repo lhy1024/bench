@@ -3,10 +3,11 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/pingcap/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/pingcap/errors"
 )
 
 var (
