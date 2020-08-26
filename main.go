@@ -1,18 +1,17 @@
 package main
 
 import (
-	"flag"
+	"os"
 )
 
-var testID = flag.Uint64("id", 0, "bench suit id")
-var tidbServer = flag.String("tidb", "", "tidb server")
-var pdServer = flag.String("pd", "", "pd server")
-var prometheusServer = flag.String("prom", "", "prometheus server")
-var apiServer = flag.String("api", "", "api server")
 
 func main() {
-	flag.Parse()
-	cluster := newCluster(testID, tidbServer, pdServer, prometheusServer, apiServer)
+	var clusterName = os.Getenv("CLUSTER_NAME")
+	var tidbServer = os.Getenv("TIDB_ADDR")
+	var pdServer = os.Getenv("PD_ADDR")
+	var prometheusServer = os.Getenv("PROM_ADDR")
+	var apiServer = os.Getenv("API_SERVER")
+	cluster := newCluster(clusterName, tidbServer, pdServer, prometheusServer, apiServer)
 
 	// load data
 	loader := newBr(cluster)

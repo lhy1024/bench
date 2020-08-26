@@ -18,7 +18,7 @@ func newScaleOut(c *cluster) *scaleOut {
 }
 
 func (s *scaleOut) run() error {
-	if err := s.c.addStores(1); err != nil {
+	if err := s.c.addStore(); err != nil {
 		return err
 	}
 	for {
@@ -36,25 +36,27 @@ func (s *scaleOut) isBalance() bool {
 }
 
 func (s *scaleOut) collect() error {
-	// create createReport
-	r, err := s.createReport()
+	// create report
+	report, err := s.createReport()
 	if err != nil {
 		return err
 	}
 
-	// send current createReport
-	err = s.c.sendReport(r)
-	if err != nil {
-		return err
-	}
-
-	// merge two reports
+	// try get last report
 	lastReport, err := s.c.getLastReport()
-	if len(lastReport) == 0 {
-		return nil
+	if err != nil {
+		return err
 	}
-	markdown := s.mergeReport(lastReport, r)
-	return s.c.sendResult(markdown)
+
+	// send report
+	var plainText string
+	if len(lastReport) == 0 { //first send
+		plainText = ""
+	} else { //second send
+		plainText = s.mergeReport(lastReport, report)
+	}
+
+	return s.c.sendReport(report, plainText)
 }
 
 func (s *scaleOut) createReport() (string, error) {
@@ -62,7 +64,8 @@ func (s *scaleOut) createReport() (string, error) {
 	return "", nil
 }
 
-func (s *scaleOut) mergeReport(lastReport, report string) (markdown string) {
+// lastReport is
+func (s *scaleOut) mergeReport(lastReport, report string) (plainText string) {
 	//todo @zeyuan
 	return ""
 }

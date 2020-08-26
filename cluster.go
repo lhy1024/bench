@@ -3,27 +3,13 @@ package main
 import "net/http"
 
 const (
-	nodes   = "/nodes"   // Get: get all node status; Post: scale in or scale out
-	reports = "/reports" // Get: get last sendReport; Post: add new sendReport
-	results = "/results" // Post: markdown string
+	resourcePrefix = "api/cluster/resource/%v"
+	scaleOutPrefix = "api/cluster/scale_out/%v/%v/%v"
+	resultsPrefix  = "api/cluster/workload/%v/result"
 )
-
-type storageKind uint64
-
-const (
-	nvme storageKind = iota
-	sharedNvme
-)
-
-type node struct {
-	cpu     uint64 // example 40c
-	mem     uint64 // example 160G
-	disk    uint64 // example 1024G
-	storage storageKind
-}
 
 type cluster struct {
-	id         uint64
+	name       string
 	tidb       string
 	pd         string
 	prometheus string
@@ -31,50 +17,38 @@ type cluster struct {
 	client     *http.Client
 }
 
-func newCluster(id *uint64, tidb, pd, prometheus, api *string) *cluster {
+func newCluster(name, tidb, pd, prometheus, api string) *cluster {
 	return &cluster{
-		id:         *id,
-		tidb:       *tidb,
-		pd:         *pd,
-		prometheus: *prometheus,
-		api:        *api,
+		name:       name,
+		tidb:       tidb,
+		pd:         pd,
+		prometheus: prometheus,
+		api:        api,
 		client:     &http.Client{},
 	}
 }
 
-func (c *cluster) getCurrentTiKV() node {
-	// todo
-	return node{}
+func (c *cluster) getAvailableResourceID(component string) (uint64, error) {
+	// get all nodes
+
+	// select available
+	return 0, nil
 }
 
-func (c *cluster) getAvailableNodes(n node) []node {
-	// todo
-	return []node{}
-}
-
-func (c *cluster) addStore(n node) error {
+func (c *cluster) scaleOut(component string, id uint64) error {
 	// todo
 	return nil
 }
 
-func (c *cluster) addStores(num uint64) error {
-	tikv := c.getCurrentTiKV()
-	nodes := c.getAvailableNodes(tikv)
-	if len(nodes) != 0 {
-		err := c.addStore(tikv)
-		if err != nil {
-			return err
-		}
+func (c *cluster) addStore() error {
+	id, err := c.getAvailableResourceID("tikv")
+	if err != nil {
+		return err
 	}
-	return nil
+	return c.scaleOut("tikv", id)
 }
 
-func (c *cluster) sendReport(report string) error {
-	// todo
-	return nil
-}
-
-func (c *cluster) sendResult(markdown string) error {
+func (c *cluster) sendReport(report, plainText string) error {
 	// todo
 	return nil
 }
