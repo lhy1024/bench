@@ -50,14 +50,6 @@ func newScaleOut(c *cluster) bench {
 	}
 }
 
-type scaleOutCreateOption func(s *scaleOut)
-
-func WithScaleOutNum(num int) scaleOutCreateOption {
-	return func(s *scaleOut) {
-		s.num = num
-	}
-}
-
 func (s *scaleOut) run() error {
 	for i := 0; i < s.num; i++ {
 		if err := s.c.addStore(); err != nil {
@@ -141,7 +133,10 @@ func (s *scaleOut) collect() error {
 	if lastReport == nil { //first send
 		plainText = ""
 	} else { //second send
-		plainText = s.mergeReport(lastReport.Data, data)
+		plainText, err = s.mergeReport(lastReport.Data, data)
+		if err != nil {
+			return err
+		}
 	}
 
 	return s.c.sendReport(data, plainText)
@@ -258,12 +253,18 @@ func (s *scaleOut) createReport() (string, error) {
 }
 
 // lastReport is
-func (s *scaleOut) mergeReport(lastReport, report string) (plainText string) {
+func (s *scaleOut) mergeReport(lastReport, report string) (plainText string, err error) {
 	//todo @zeyuan
 	last := &stats{}
 	cur := &stats{}
-	json.Unmarshal([]byte(lastReport), last)
-	json.Unmarshal([]byte(report), cur)
+	err = json.Unmarshal([]byte(lastReport), last)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal([]byte(report), cur)
+	if err != nil {
+		return
+	}
 	plainText = fmt.Sprintf(plainText+"Balance interval is %d, compared to origin by %.2f\n",
 		last.Interval, float64((last.Interval-cur.Interval)/(cur.Interval+1)))
 	plainText = fmt.Sprintf(plainText+"Prev Balance leader is %.2f, compared to origin by %.2f\n",

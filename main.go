@@ -37,6 +37,7 @@ func main() {
 	bench := newBench("scaleOut", cluster)
 	if bench == nil {
 		log.Fatal("error bench name", zap.Error(err))
+		return
 	}
 	err = bench.run()
 	if err != nil {
