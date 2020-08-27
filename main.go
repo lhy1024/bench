@@ -32,6 +32,7 @@ func main() {
 	if err != nil {
 		log.Fatal("failed when load", zap.Error(err))
 	}
+	log.Info("finish load")
 
 	// bench
 	bench := newBench("scaleOut", cluster)
@@ -43,10 +44,12 @@ func main() {
 	if err != nil {
 		log.Fatal("failed when bench", zap.Error(err))
 	}
+	log.Info("finish bench")
 
 	// sendReport
 	err = bench.collect()
 	if err != nil {
 		log.Fatal("failed when collect report", zap.Error(err))
 	}
+	log.Info("finish report")
 }
