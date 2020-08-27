@@ -1,0 +1,13 @@
+fieldlength=100
+fieldcount=10
+recordcount=104857600
+operationcount=104857600
+workload=core
+threadcount=500
+readallfields=true
+table=test_go_ycsb
+readproportion=1.0
+updateproportion=0.0
+scanproportion=0
+insertproportion=0
+requestdistribution=uniform
