@@ -123,18 +123,18 @@ func (c *cluster) sendReport(data, plainText string) error {
 	})
 }
 
-func (c *cluster) getLastReportData() (string, error) {
+func (c *cluster) getLastReport() (*WorkloadReport, error) {
 	prefix := fmt.Sprintf(resultsPrefix, c.name)
 	url := c.joinUrl(prefix)
 	resp, err := doRequest(url, http.MethodGet)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	reports := make([]WorkloadReport, 0, 0)
 	err = json.Unmarshal([]byte(resp), &reports)
-	if err != nil {
-		return "", err
+	if err != nil || len(reports) == 0 {
+		return nil, err
 	}
-	return reports[0].Data, nil
+	return &reports[0], nil
 }

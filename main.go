@@ -7,6 +7,17 @@ import (
 	"go.uber.org/zap"
 )
 
+var benchCases = map[string]func(*cluster) bench{
+	"scaleOut": newScaleOut,
+}
+
+func newBench(name string, c *cluster) bench {
+	if f, ok := benchCases[name]; ok {
+		return f(c)
+	}
+	return nil
+}
+
 func main() {
 	var clusterName = os.Getenv("CLUSTER_NAME")
 	var tidbServer = os.Getenv("TIDB_ADDR")
@@ -23,7 +34,10 @@ func main() {
 	}
 
 	// bench
-	bench := newScaleOut(cluster)
+	bench := newBench("scaleOut", cluster)
+	if bench == nil {
+		log.Fatal("error bench name", zap.Error(err))
+	}
 	err = bench.run()
 	if err != nil {
 		log.Fatal("failed when bench", zap.Error(err))

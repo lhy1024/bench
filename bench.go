@@ -11,7 +11,7 @@ type scaleOut struct {
 	c *cluster
 }
 
-func newScaleOut(c *cluster) *scaleOut {
+func newScaleOut(c *cluster) bench {
 	return &scaleOut{
 		c: c,
 	}
@@ -42,17 +42,17 @@ func (s *scaleOut) collect() error {
 	}
 
 	// try get last data
-	lastReportData, err := s.c.getLastReportData()
+	lastReport, err := s.c.getLastReport()
 	if err != nil {
 		return err
 	}
 
 	// send data
 	var plainText string
-	if len(lastReportData) == 0 { //first send
+	if lastReport == nil { //first send
 		plainText = ""
 	} else { //second send
-		plainText = s.mergeReport(lastReportData, data)
+		plainText = s.mergeReport(lastReport.Data, data)
 	}
 
 	return s.c.sendReport(data, plainText)
