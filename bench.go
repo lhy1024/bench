@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/api"
@@ -33,19 +34,35 @@ type stats struct {
 }
 
 type scaleOut struct {
-	c *cluster
-	t timePoint
+	c   *cluster
+	t   timePoint
+	num int //scale out num
 }
 
 func newScaleOut(c *cluster) bench {
+	num, err := strconv.Atoi(os.Getenv("SCALE_NUM"))
+	if err != nil {
+		num = 1 // default
+	}
 	return &scaleOut{
-		c: c,
+		c:   c,
+		num: num,
+	}
+}
+
+type scaleOutCreateOption func(s *scaleOut)
+
+func WithScaleOutNum(num int) scaleOutCreateOption {
+	return func(s *scaleOut) {
+		s.num = num
 	}
 }
 
 func (s *scaleOut) run() error {
-	if err := s.c.addStore(); err != nil {
-		return err
+	for i := 0; i < s.num; i++ {
+		if err := s.c.addStore(); err != nil {
+			return err
+		}
 	}
 	s.t.addTime = time.Now()
 	for {
