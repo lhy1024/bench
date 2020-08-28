@@ -8,9 +8,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pingcap/log"
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
+	"go.uber.org/zap"
 )
 
 type bench interface {
@@ -134,6 +136,7 @@ func (s *scaleOut) collect() error {
 		plainText = ""
 	} else { //second send
 		plainText, err = s.mergeReport(lastReport.Data, data)
+		log.Info("Merge report success", zap.String("merge result", plainText))
 		if err != nil {
 			return err
 		}
@@ -157,8 +160,8 @@ func (s *scaleOut) createReport() (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	result, warnings, err := v1api.Query(ctx,
-		"sum(rate(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"}[30s])) / "+
-			"sum(rate(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"}[30s]))", s.t.addTime)
+		"sum(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"})" +
+		" / sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"})", s.t.addTime)
 	if err != nil {
 		fmt.Printf("Error querying Prometheus: %v\n", err)
 		os.Exit(1)
@@ -173,8 +176,8 @@ func (s *scaleOut) createReport() (string, error) {
 	}
 
 	result, warnings, err = v1api.Query(ctx,
-		"sum(rate(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"}[30s])) / "+
-			"sum(rate(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"}[30s]))", s.t.balanceTime)
+		"sum(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"})" +
+			" / sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"})", s.t.balanceTime)
 	if err != nil {
 		fmt.Printf("Error querying Prometheus: %v\n", err)
 		os.Exit(1)
@@ -247,7 +250,6 @@ func (s *scaleOut) createReport() (string, error) {
 	if len(vector) >= 1 {
 		rep.PrevBalanceRegionCount = int(vector[0].Value)
 	}
-	fmt.Printf("percentage %d is %%", 10)
 	bytes, err := json.Marshal(rep)
 	return string(bytes), err
 }
@@ -275,9 +277,9 @@ func (s *scaleOut) mergeReport(lastReport, report string) (plainText string, err
 		float64(last.PrevBalanceLeaderCount), float64((last.PrevBalanceLeaderCount-cur.PrevBalanceLeaderCount)/(cur.PrevBalanceLeaderCount+1)))
 	plainText = fmt.Sprintf(plainText+"Cur balance region is %.2f, compared to origin by %.2f\n",
 		float64(last.PrevBalanceRegionCount), float64((last.PrevBalanceRegionCount-cur.PrevBalanceRegionCount)/(cur.PrevBalanceRegionCount+1)))
-	plainText = fmt.Sprintf(plainText+"Prev latency is %.2f, compared to origin by %.2f\n",
+	plainText = fmt.Sprintf(plainText+"Prev latency is %.4f, compared to origin by %.2f\n",
 		last.PrevLatency, (last.PrevLatency-cur.PrevLatency)/(cur.PrevLatency+1))
-	plainText = fmt.Sprintf(plainText+"Cur latency is %.2f, compared to origin by %.2f\n",
+	plainText = fmt.Sprintf(plainText+"Cur latency is %.4f, compared to origin by %.2f\n",
 		last.CurLatency, (last.CurLatency-cur.CurLatency)/(cur.CurLatency+1))
 	return
 }
