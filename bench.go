@@ -74,8 +74,8 @@ func (s *scaleOut) isBalance() bool {
 		Address: s.c.prometheus,
 	})
 	if err != nil {
-		fmt.Printf("Error creating client: %v\n", err)
-		os.Exit(1)
+		log.Error("Error creating client", zap.Error(err))
+
 	}
 
 	v1api := v1.NewAPI(client)
@@ -88,13 +88,12 @@ func (s *scaleOut) isBalance() bool {
 	}
 	result, warnings, err := v1api.QueryRange(ctx, "pd_scheduler_store_status{type=\"region_score\"}", r)
 	if err != nil {
-		fmt.Printf("Error querying Prometheus: %v\n", err)
-		os.Exit(1)
+		log.Error("Error querying Prometheus", zap.Error(err))
 	}
 	if len(warnings) > 0 {
-		fmt.Printf("Warnings: %v\n", warnings)
+		log.Warn("query has warnings")
 	}
-	fmt.Printf("Result:\n%v\n", result)
+	//fmt.Printf("Result:\n%v\n", result)
 	matrix := result.(model.Matrix)
 	for _, data := range matrix {
 		if len(data.Values) != 10 {
@@ -112,7 +111,7 @@ func (s *scaleOut) isBalance() bool {
 			return false
 		}
 	}
-	fmt.Println("Balanced")
+	log.Info("Balanced")
 	s.t.balanceTime = time.Now()
 	return true
 }
@@ -152,40 +151,37 @@ func (s *scaleOut) createReport() (string, error) {
 		Address: s.c.prometheus,
 	})
 	if err != nil {
-		fmt.Printf("Error creating client: %v\n", err)
-		os.Exit(1)
+		log.Error("Error creating client", zap.Error(err))
 	}
 
 	v1api := v1.NewAPI(client)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	result, warnings, err := v1api.Query(ctx,
-		"sum(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"})" +
-		" / sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"})", s.t.addTime)
+		"sum(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"})"+
+			" / sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"})", s.t.addTime)
 	if err != nil {
-		fmt.Printf("Error querying Prometheus: %v\n", err)
-		os.Exit(1)
+		log.Error("Error querying Prometheus", zap.Error(err))
 	}
 	if len(warnings) > 0 {
-		fmt.Printf("Warnings: %v\n", warnings)
+		log.Warn("query has warnings")
 	}
-	fmt.Printf("Result:\n%v\n", result)
+	//fmt.Printf("Result:\n%v\n", result)
 	vector := result.(model.Vector)
 	if len(vector) >= 1 {
 		rep.PrevLatency = float64(vector[0].Value)
 	}
 
 	result, warnings, err = v1api.Query(ctx,
-		"sum(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"})" +
+		"sum(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"})"+
 			" / sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"})", s.t.balanceTime)
 	if err != nil {
-		fmt.Printf("Error querying Prometheus: %v\n", err)
-		os.Exit(1)
+		log.Error("Error querying Prometheus", zap.Error(err))
 	}
 	if len(warnings) > 0 {
-		fmt.Printf("Warnings: %v\n", warnings)
+		log.Warn("query has warnings")
 	}
-	fmt.Printf("Result:\n%v\n", result)
+	//fmt.Printf("Result:\n%v\n", result)
 	vector = result.(model.Vector)
 	if len(vector) >= 1 {
 		rep.CurLatency = float64(vector[0].Value)
@@ -194,13 +190,12 @@ func (s *scaleOut) createReport() (string, error) {
 	result, warnings, err = v1api.Query(ctx,
 		"pd_scheduler_event_count{type=\"balance-leader-scheduler\", name=\"schedule\"}", s.t.balanceTime)
 	if err != nil {
-		fmt.Printf("Error querying Prometheus: %v\n", err)
-		os.Exit(1)
+		log.Error("Error querying Prometheus", zap.Error(err))
 	}
 	if len(warnings) > 0 {
-		fmt.Printf("Warnings: %v\n", warnings)
+		log.Warn("query has warnings")
 	}
-	fmt.Printf("Result:\n%v\n", result)
+	//fmt.Printf("Result:\n%v\n", result)
 	vector = result.(model.Vector)
 	if len(vector) >= 1 {
 		rep.CurBalanceLeaderCount = int(vector[0].Value)
@@ -209,13 +204,12 @@ func (s *scaleOut) createReport() (string, error) {
 	result, warnings, err = v1api.Query(ctx,
 		"pd_scheduler_event_count{type=\"balance-region-scheduler\", name=\"schedule\"}", s.t.balanceTime)
 	if err != nil {
-		fmt.Printf("Error querying Prometheus: %v\n", err)
-		os.Exit(1)
+		log.Error("Error querying Prometheus", zap.Error(err))
 	}
 	if len(warnings) > 0 {
-		fmt.Printf("Warnings: %v\n", warnings)
+		log.Warn("query has warnings")
 	}
-	fmt.Printf("Result:\n%v\n", result)
+	//fmt.Printf("Result:\n%v\n", result)
 	vector = result.(model.Vector)
 	if len(vector) >= 1 {
 		rep.CurBalanceRegionCount = int(vector[0].Value)
@@ -224,13 +218,12 @@ func (s *scaleOut) createReport() (string, error) {
 	result, warnings, err = v1api.Query(ctx,
 		"pd_scheduler_event_count{type=\"balance-leader-scheduler\", name=\"schedule\"}", s.t.addTime)
 	if err != nil {
-		fmt.Printf("Error querying Prometheus: %v\n", err)
-		os.Exit(1)
+		log.Error("Error querying Prometheus", zap.Error(err))
 	}
 	if len(warnings) > 0 {
-		fmt.Printf("Warnings: %v\n", warnings)
+		log.Warn("query has warnings")
 	}
-	fmt.Printf("Result:\n%v\n", result)
+	//fmt.Printf("Result:\n%v\n", result)
 	vector = result.(model.Vector)
 	if len(vector) >= 1 {
 		rep.PrevBalanceLeaderCount = int(vector[0].Value)
@@ -239,11 +232,10 @@ func (s *scaleOut) createReport() (string, error) {
 	result, warnings, err = v1api.Query(ctx,
 		"pd_scheduler_event_count{type=\"balance-region-scheduler\", name=\"schedule\"}", s.t.addTime)
 	if err != nil {
-		fmt.Printf("Error querying Prometheus: %v\n", err)
-		os.Exit(1)
+		log.Error("Error querying Prometheus", zap.Error(err))
 	}
 	if len(warnings) > 0 {
-		fmt.Printf("Warnings: %v\n", warnings)
+		log.Warn("query has warnings")
 	}
 
 	vector = result.(model.Vector)
@@ -251,6 +243,9 @@ func (s *scaleOut) createReport() (string, error) {
 		rep.PrevBalanceRegionCount = int(vector[0].Value)
 	}
 	bytes, err := json.Marshal(rep)
+	if err != nil {
+		log.Error("marshal error", zap.Error(err))
+	}
 	return string(bytes), err
 }
 
@@ -261,10 +256,12 @@ func (s *scaleOut) mergeReport(lastReport, report string) (plainText string, err
 	cur := &stats{}
 	err = json.Unmarshal([]byte(lastReport), last)
 	if err != nil {
+		log.Error("unmarshal error", zap.Error(err))
 		return
 	}
 	err = json.Unmarshal([]byte(report), cur)
 	if err != nil {
+		log.Error("unmarshal error", zap.Error(err))
 		return
 	}
 	plainText = fmt.Sprintf(plainText+"Balance interval is %d, compared to origin by %.2f\n",
