@@ -9,5 +9,6 @@ require (
 	github.com/pingcap/log v0.0.0-20200511115504-543df19646ad
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/common v0.13.0
+	github.com/siddontang/go-mysql v1.1.0
 	go.uber.org/zap v1.15.0
 )

@@ -25,9 +25,9 @@ func main() {
 	var prometheusServer = os.Getenv("PROM_ADDR")
 	var apiServer = os.Getenv("API_SERVER")
 	cluster := newCluster(clusterName, tidbServer, pdServer, prometheusServer, apiServer)
-
 	// load data
-	loader := newBr(cluster)
+	loader := newYcsb(cluster)
+	log.Info("load start")
 	err := loader.load()
 	if err != nil {
 		log.Fatal("failed when load", zap.Error(err))
