@@ -72,8 +72,6 @@ func (s *scaleOut) run() error {
 }
 
 func (s *scaleOut) isBalance() (bool, error) {
-	// todo get data from prometheus
-	// todo @zeyuan
 	client, err := api.NewClient(api.Config{
 		Address: s.c.prometheus,
 	})
@@ -149,7 +147,6 @@ func (s *scaleOut) collect() error {
 }
 
 func (s *scaleOut) createReport() (string, error) {
-	//todo @zeyuan
 	rep := &stats{Interval: int(s.t.balanceTime.Sub(s.t.addTime).Seconds())}
 	client, err := api.NewClient(api.Config{
 		Address: s.c.prometheus,
@@ -250,7 +247,6 @@ func (s *scaleOut) createReport() (string, error) {
 
 // lastReport is
 func (s *scaleOut) mergeReport(lastReport, report string) (plainText string, err error) {
-	//todo @zeyuan
 	last := &stats{}
 	cur := &stats{}
 	err = json.Unmarshal([]byte(lastReport), last)

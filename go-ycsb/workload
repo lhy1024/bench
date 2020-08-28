@@ -1,6 +1,6 @@
 fieldlength=100
 fieldcount=10
-recordcount=500
+recordcount=1000
 operationcount=104857600
 workload=core
 threadcount=500

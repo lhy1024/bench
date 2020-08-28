@@ -42,12 +42,12 @@ func (l *ycsb) load() error {
 
 	// go-ycsb insert
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("./go-ycsb/go-ycsb", "load", "mysql", "-P", "./go-ycsb/workload", "-p", "mysql.user=root", "-p mysql.db="+dbName,
-		"-p mysql.host="+host, "-p", "mysql.port="+port)
+	cmd := exec.Command("./go-ycsb/go-ycsb", "load", "mysql", "-P", "./go-ycsb/workload", "-p", "mysql.user=root", "-p", "mysql.db="+dbName,
+		"-p", "mysql.host="+host, "-p", "mysql.port="+port)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err = cmd.Run()
-	log.Info("go-ycsb", zap.Strings("cmd", cmd.Args), zap.String("stdout", stdout.String()), zap.String("stderr", stderr.String()))
+	log.Debug("go-ycsb", zap.Strings("cmd", cmd.Args), zap.String("stdout", stdout.String()), zap.String("stderr", stderr.String()))
 	if err != nil {
 		return err
 	}
