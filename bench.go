@@ -61,21 +61,25 @@ func (s *scaleOut) run() error {
 	s.t.addTime = time.Now()
 	for {
 		time.Sleep(time.Minute)
-		if s.isBalance() {
+		bal, err := s.isBalance()
+		if err != nil {
+			return err
+		}
+		if bal {
 			return nil
 		}
 	}
 }
 
-func (s *scaleOut) isBalance() bool {
+func (s *scaleOut) isBalance() (bool, error) {
 	// todo get data from prometheus
 	// todo @zeyuan
 	client, err := api.NewClient(api.Config{
 		Address: s.c.prometheus,
 	})
 	if err != nil {
-		log.Error("Error creating client", zap.Error(err))
-
+		log.Error("error creating client", zap.Error(err))
+		return false, nil
 	}
 
 	v1api := v1.NewAPI(client)
@@ -88,7 +92,7 @@ func (s *scaleOut) isBalance() bool {
 	}
 	result, warnings, err := v1api.QueryRange(ctx, "pd_scheduler_store_status{type=\"region_score\"}", r)
 	if err != nil {
-		log.Error("Error querying Prometheus", zap.Error(err))
+		return false, err
 	}
 	if len(warnings) > 0 {
 		log.Warn("query has warnings")
@@ -97,7 +101,7 @@ func (s *scaleOut) isBalance() bool {
 	matrix := result.(model.Matrix)
 	for _, data := range matrix {
 		if len(data.Values) != 10 {
-			return false
+			return false, nil
 		}
 		mean := 0.0
 		dev := 0.0
@@ -108,12 +112,12 @@ func (s *scaleOut) isBalance() bool {
 			dev += (float64(v.Value) - mean) * (float64(v.Value) - mean) / 10
 		}
 		if mean*mean*0.1 < dev {
-			return false
+			return false, nil
 		}
 	}
-	log.Info("Balanced")
+	log.Info("balanced")
 	s.t.balanceTime = time.Now()
-	return true
+	return true, nil
 }
 
 func (s *scaleOut) collect() error {
@@ -151,7 +155,7 @@ func (s *scaleOut) createReport() (string, error) {
 		Address: s.c.prometheus,
 	})
 	if err != nil {
-		log.Error("Error creating client", zap.Error(err))
+		log.Error("error creating client", zap.Error(err))
 	}
 
 	v1api := v1.NewAPI(client)
@@ -161,12 +165,11 @@ func (s *scaleOut) createReport() (string, error) {
 		"sum(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"})"+
 			" / sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"})", s.t.addTime)
 	if err != nil {
-		log.Error("Error querying Prometheus", zap.Error(err))
+		log.Error("error querying Prometheus", zap.Error(err))
 	}
 	if len(warnings) > 0 {
 		log.Warn("query has warnings")
 	}
-	//fmt.Printf("Result:\n%v\n", result)
 	vector := result.(model.Vector)
 	if len(vector) >= 1 {
 		rep.PrevLatency = float64(vector[0].Value)
@@ -176,12 +179,11 @@ func (s *scaleOut) createReport() (string, error) {
 		"sum(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"})"+
 			" / sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"})", s.t.balanceTime)
 	if err != nil {
-		log.Error("Error querying Prometheus", zap.Error(err))
+		log.Error("error querying Prometheus", zap.Error(err))
 	}
 	if len(warnings) > 0 {
 		log.Warn("query has warnings")
 	}
-	//fmt.Printf("Result:\n%v\n", result)
 	vector = result.(model.Vector)
 	if len(vector) >= 1 {
 		rep.CurLatency = float64(vector[0].Value)
@@ -190,12 +192,11 @@ func (s *scaleOut) createReport() (string, error) {
 	result, warnings, err = v1api.Query(ctx,
 		"pd_scheduler_event_count{type=\"balance-leader-scheduler\", name=\"schedule\"}", s.t.balanceTime)
 	if err != nil {
-		log.Error("Error querying Prometheus", zap.Error(err))
+		log.Error("error querying Prometheus", zap.Error(err))
 	}
 	if len(warnings) > 0 {
 		log.Warn("query has warnings")
 	}
-	//fmt.Printf("Result:\n%v\n", result)
 	vector = result.(model.Vector)
 	if len(vector) >= 1 {
 		rep.CurBalanceLeaderCount = int(vector[0].Value)
@@ -204,12 +205,11 @@ func (s *scaleOut) createReport() (string, error) {
 	result, warnings, err = v1api.Query(ctx,
 		"pd_scheduler_event_count{type=\"balance-region-scheduler\", name=\"schedule\"}", s.t.balanceTime)
 	if err != nil {
-		log.Error("Error querying Prometheus", zap.Error(err))
+		log.Error("error querying Prometheus", zap.Error(err))
 	}
 	if len(warnings) > 0 {
 		log.Warn("query has warnings")
 	}
-	//fmt.Printf("Result:\n%v\n", result)
 	vector = result.(model.Vector)
 	if len(vector) >= 1 {
 		rep.CurBalanceRegionCount = int(vector[0].Value)
@@ -218,12 +218,11 @@ func (s *scaleOut) createReport() (string, error) {
 	result, warnings, err = v1api.Query(ctx,
 		"pd_scheduler_event_count{type=\"balance-leader-scheduler\", name=\"schedule\"}", s.t.addTime)
 	if err != nil {
-		log.Error("Error querying Prometheus", zap.Error(err))
+		log.Error("error querying Prometheus", zap.Error(err))
 	}
 	if len(warnings) > 0 {
 		log.Warn("query has warnings")
 	}
-	//fmt.Printf("Result:\n%v\n", result)
 	vector = result.(model.Vector)
 	if len(vector) >= 1 {
 		rep.PrevBalanceLeaderCount = int(vector[0].Value)
@@ -232,7 +231,7 @@ func (s *scaleOut) createReport() (string, error) {
 	result, warnings, err = v1api.Query(ctx,
 		"pd_scheduler_event_count{type=\"balance-region-scheduler\", name=\"schedule\"}", s.t.addTime)
 	if err != nil {
-		log.Error("Error querying Prometheus", zap.Error(err))
+		log.Error("error querying Prometheus", zap.Error(err))
 	}
 	if len(warnings) > 0 {
 		log.Warn("query has warnings")
@@ -256,12 +255,10 @@ func (s *scaleOut) mergeReport(lastReport, report string) (plainText string, err
 	cur := &stats{}
 	err = json.Unmarshal([]byte(lastReport), last)
 	if err != nil {
-		log.Error("unmarshal error", zap.Error(err))
 		return
 	}
 	err = json.Unmarshal([]byte(report), cur)
 	if err != nil {
-		log.Error("unmarshal error", zap.Error(err))
 		return
 	}
 	plainText = fmt.Sprintf(plainText+"Balance interval is %d, compared to origin by %.2f\n",
