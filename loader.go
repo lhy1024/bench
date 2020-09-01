@@ -75,8 +75,8 @@ type br struct {
 	c *cluster
 }
 
-func newBr(c *cluster) *ycsb {
-	return &ycsb{
+func newBr(c *cluster) loader {
+	return &br{
 		c: c,
 	}
 }

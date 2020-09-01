@@ -26,7 +26,7 @@ func main() {
 	var apiServer = os.Getenv("API_SERVER")
 	cluster := newCluster(clusterName, tidbServer, pdServer, prometheusServer, apiServer)
 	// load data
-	loader := newYcsb(cluster)
+	loader := newBr(cluster)
 	log.Info("load start")
 	err := loader.load()
 	if err != nil {
