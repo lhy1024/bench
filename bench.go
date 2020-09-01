@@ -26,13 +26,15 @@ type timePoint struct {
 }
 
 type stats struct {
-	Interval               int     `json:"interval"`
+	BalanceInterval        int     `json:"balanceInterval"`
 	PrevBalanceLeaderCount int     `json:"prevBalanceLeaderCount"`
 	PrevBalanceRegionCount int     `json:"prevBalanceRegionCount"`
 	CurBalanceLeaderCount  int     `json:"curBalanceLeaderCount"`
 	CurBalanceRegionCount  int     `json:"curBalanceRegionCount"`
 	PrevLatency            float64 `json:"prevLatency"`
 	CurLatency             float64 `json:"curLatency"`
+	PrevCompactionRate     float64 `json:"prevCompactionRate"`
+	CurCompactionRate      float64 `json:"curCompactionRate"`
 }
 
 type scaleOut struct {
@@ -95,7 +97,6 @@ func (s *scaleOut) isBalance() (bool, error) {
 	if len(warnings) > 0 {
 		log.Warn("query has warnings")
 	}
-	//fmt.Printf("Result:\n%v\n", result)
 	matrix := result.(model.Matrix)
 	for _, data := range matrix {
 		if len(data.Values) != 10 {
@@ -130,7 +131,7 @@ func (s *scaleOut) collect() error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Println(s.mergeReport(data, data))
 	// send data
 	var plainText string
 	if lastReport == nil { //first send
@@ -147,7 +148,7 @@ func (s *scaleOut) collect() error {
 }
 
 func (s *scaleOut) createReport() (string, error) {
-	rep := &stats{Interval: int(s.t.balanceTime.Sub(s.t.addTime).Seconds())}
+	rep := &stats{BalanceInterval: int(s.t.balanceTime.Sub(s.t.addTime).Seconds())}
 	client, err := api.NewClient(api.Config{
 		Address: s.c.prometheus,
 	})
@@ -233,7 +234,6 @@ func (s *scaleOut) createReport() (string, error) {
 	if len(warnings) > 0 {
 		log.Warn("query has warnings")
 	}
-
 	vector = result.(model.Vector)
 	if len(vector) >= 1 {
 		rep.PrevBalanceRegionCount = int(vector[0].Value)
@@ -242,7 +242,41 @@ func (s *scaleOut) createReport() (string, error) {
 	if err != nil {
 		log.Error("marshal error", zap.Error(err))
 	}
+
+	result, warnings, err = v1api.Query(ctx,
+		"sum(tikv_engine_compaction_flow_bytes)", s.t.balanceTime)
+	if err != nil {
+		log.Error("error querying Prometheus", zap.Error(err))
+	}
+	if len(warnings) > 0 {
+		log.Warn("query has warnings")
+	}
+	vector = result.(model.Vector)
+	if len(vector) >= 1 {
+		rep.PrevCompactionRate = float64(vector[0].Value)
+	}
+
+	result, warnings, err = v1api.Query(ctx,
+		"sum(tikv_engine_compaction_flow_bytes)", time.Now())
+	if err != nil {
+		log.Error("error querying Prometheus", zap.Error(err))
+	}
+	if len(warnings) > 0 {
+		log.Warn("query has warnings")
+	}
+	vector = result.(model.Vector)
+	if len(vector) >= 1 {
+		rep.CurCompactionRate = float64(vector[0].Value)
+	}
+
 	return string(bytes), err
+}
+
+func reportLine(head string, last float64, cur float64) string {
+	headPart := "\t* " + head + ": "
+	curPart := fmt.Sprintf("%.2f ", cur)
+	deltaPart := fmt.Sprintf("delta: %.2f%%  \n", (cur-last)*100/(last+1))
+	return headPart + curPart + deltaPart
 }
 
 // lastReport is
@@ -257,19 +291,26 @@ func (s *scaleOut) mergeReport(lastReport, report string) (plainText string, err
 	if err != nil {
 		return
 	}
-	plainText = fmt.Sprintf(plainText+"Balance interval is %d, compared to origin by %.2f\n",
-		last.Interval, float64((last.Interval-cur.Interval)/(cur.Interval+1)))
-	plainText = fmt.Sprintf(plainText+"Prev Balance leader is %.2f, compared to origin by %.2f\n",
-		float64(last.PrevBalanceLeaderCount), float64((last.PrevBalanceLeaderCount-cur.PrevBalanceLeaderCount)/(cur.PrevBalanceLeaderCount+1)))
-	plainText = fmt.Sprintf(plainText+"Prev balance region is %.2f, compared to origin by %.2f\n",
-		float64(last.PrevBalanceRegionCount), float64((last.PrevBalanceRegionCount-cur.PrevBalanceRegionCount)/(cur.PrevBalanceRegionCount+1)))
-	plainText = fmt.Sprintf(plainText+"Cur balance leader is %.2f, compared to origin by %.2f\n",
-		float64(last.PrevBalanceLeaderCount), float64((last.PrevBalanceLeaderCount-cur.PrevBalanceLeaderCount)/(cur.PrevBalanceLeaderCount+1)))
-	plainText = fmt.Sprintf(plainText+"Cur balance region is %.2f, compared to origin by %.2f\n",
-		float64(last.PrevBalanceRegionCount), float64((last.PrevBalanceRegionCount-cur.PrevBalanceRegionCount)/(cur.PrevBalanceRegionCount+1)))
-	plainText = fmt.Sprintf(plainText+"Prev latency is %.4f, compared to origin by %.2f\n",
-		last.PrevLatency, (last.PrevLatency-cur.PrevLatency)/(cur.PrevLatency+1))
-	plainText = fmt.Sprintf(plainText+"Cur latency is %.4f, compared to origin by %.2f\n",
-		last.CurLatency, (last.CurLatency-cur.CurLatency)/(cur.CurLatency+1))
+	title := "@@\t\t\tBenchmark diff\t\t\t@@\n"
+	splitLine := ""
+	for i := 0; i < 58; i++ {
+		splitLine += "="
+	}
+	splitLine += "\n"
+	plainText += title
+	plainText += splitLine
+	balanceTag := "balance:  \n"
+	scheduleTag := "schedule:  \n"
+	compactionTag := "compaction:  \n"
+	latencyTag := "latency:  \n"
+	plainText += balanceTag + reportLine("balance_time", float64(last.BalanceInterval), float64(cur.BalanceInterval))
+	plainText += scheduleTag + reportLine("balance_leader",
+		float64(last.CurBalanceLeaderCount-last.PrevBalanceLeaderCount), float64(cur.CurBalanceLeaderCount-cur.PrevBalanceLeaderCount))
+	plainText += reportLine("balance_leader",
+		float64(last.CurBalanceRegionCount-last.PrevBalanceRegionCount), float64(cur.CurBalanceRegionCount-cur.PrevBalanceRegionCount))
+	plainText += compactionTag + reportLine("compaction_flow",
+		last.CurCompactionRate-last.PrevCompactionRate, cur.CurCompactionRate-cur.PrevCompactionRate)
+	plainText += latencyTag + reportLine("prev_query_latency", last.PrevLatency, cur.PrevLatency)
+	plainText += reportLine("cur_query_latency", last.CurLatency, cur.CurLatency)
 	return
 }
