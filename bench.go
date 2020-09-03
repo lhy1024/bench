@@ -161,7 +161,7 @@ func (s *scaleOut) createReport() (string, error) {
 	defer cancel()
 	result, warnings, err := v1api.Query(ctx,
 		"sum(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"})"+
-			" / sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"})", s.t.addTime)
+			" / (sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"}) + 1)", s.t.addTime)
 	if err != nil {
 		log.Error("error querying Prometheus", zap.Error(err))
 	}
@@ -175,7 +175,7 @@ func (s *scaleOut) createReport() (string, error) {
 
 	result, warnings, err = v1api.Query(ctx,
 		"sum(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"})"+
-			" / sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"})", s.t.balanceTime)
+			" / (sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"}) + 1)", s.t.balanceTime)
 	if err != nil {
 		log.Error("error querying Prometheus", zap.Error(err))
 	}
@@ -291,7 +291,7 @@ func (s *scaleOut) mergeReport(lastReport, report string) (plainText string, err
 	if err != nil {
 		return
 	}
-	title := "@@\t\t\tBenchmark diff\t\t\t@@\n"
+	title := "```diff  \n@@\t\t\tBenchmark diff\t\t\t@@\n"
 	splitLine := ""
 	for i := 0; i < 58; i++ {
 		splitLine += "="
@@ -312,5 +312,6 @@ func (s *scaleOut) mergeReport(lastReport, report string) (plainText string, err
 		last.CurCompactionRate-last.PrevCompactionRate, cur.CurCompactionRate-cur.PrevCompactionRate)
 	plainText += latencyTag + reportLine("prev_query_latency", last.PrevLatency, cur.PrevLatency)
 	plainText += reportLine("cur_query_latency", last.CurLatency, cur.CurLatency)
+	plainText += "```  \n"
 	return
 }
