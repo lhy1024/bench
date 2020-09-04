@@ -50,7 +50,7 @@ type WorkloadReport struct {
 	PlainText *string `gorm:"column:plaintext" json:"plaintext,omitempty"`
 }
 
-type cluster struct {
+type Cluster struct {
 	name       string
 	tidb       string
 	pd         string
@@ -59,8 +59,8 @@ type cluster struct {
 	client     *http.Client
 }
 
-func newCluster(name, tidb, pd, prometheus, api string) *cluster {
-	return &cluster{
+func NewCluster(name, tidb, pd, prometheus, api string) *Cluster {
+	return &Cluster{
 		name:       name,
 		tidb:       tidb,
 		pd:         pd,
@@ -70,11 +70,11 @@ func newCluster(name, tidb, pd, prometheus, api string) *cluster {
 	}
 }
 
-func (c *cluster) joinUrl(prefix string) string {
+func (c *Cluster) joinUrl(prefix string) string {
 	return c.api + "/" + prefix
 }
 
-func (c *cluster) getAvailableResourceID(component string) (uint, error) {
+func (c *Cluster) getAvailableResourceID(component string) (uint, error) {
 	// get all nodes
 	prefix := fmt.Sprintf(resourcePrefix, c.name)
 	url := c.joinUrl(prefix)
@@ -98,14 +98,14 @@ func (c *cluster) getAvailableResourceID(component string) (uint, error) {
 	return 0, errors.New("no available resources")
 }
 
-func (c *cluster) scaleOut(component string, id uint) error {
+func (c *Cluster) scaleOut(component string, id uint) error {
 	prefix := fmt.Sprintf(scaleOutPrefix, c.name, id, component)
 	url := c.joinUrl(prefix)
 	_, err := doRequest(url, http.MethodPost)
 	return err
 }
 
-func (c *cluster) addStore() error {
+func (c *Cluster) AddStore() error {
 	component := "tikv"
 	id, err := c.getAvailableResourceID(component)
 	if err != nil {
@@ -114,7 +114,7 @@ func (c *cluster) addStore() error {
 	return c.scaleOut(component, id)
 }
 
-func (c *cluster) sendReport(data, plainText string) error {
+func (c *Cluster) SendReport(data, plainText string) error {
 	prefix := fmt.Sprintf(resultsPrefix, c.name)
 	url := c.joinUrl(prefix)
 	return postJSON(url, map[string]interface{}{
@@ -123,7 +123,7 @@ func (c *cluster) sendReport(data, plainText string) error {
 	})
 }
 
-func (c *cluster) getLastReport() (*WorkloadReport, error) {
+func (c *Cluster) GetLastReport() (*WorkloadReport, error) {
 	prefix := fmt.Sprintf(resultsPrefix, c.name)
 	url := c.joinUrl(prefix)
 	resp, err := doRequest(url, http.MethodGet)

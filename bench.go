@@ -15,9 +15,17 @@ import (
 	"go.uber.org/zap"
 )
 
-type bench interface {
-	run() error
-	collect() error
+type Bench interface {
+	Run() error
+	Collect() error
+}
+
+func CreateScaleOutCase(cluster *Cluster) *Case {
+	return &Case{
+		Exporter: NewBR(cluster),
+		Importer: NewYCSB(cluster, "workload-scale-out"),
+		Bench:    NewScaleOut(cluster),
+	}
 }
 
 type timePoint struct {
@@ -38,12 +46,12 @@ type stats struct {
 }
 
 type scaleOut struct {
-	c   *cluster
+	c   *Cluster
 	t   timePoint
 	num int //scale out num
 }
 
-func newScaleOut(c *cluster) bench {
+func NewScaleOut(c *Cluster) Bench {
 	num, err := strconv.Atoi(os.Getenv("SCALE_NUM"))
 	if err != nil {
 		num = 1 // default
@@ -54,15 +62,15 @@ func newScaleOut(c *cluster) bench {
 	}
 }
 
-func (s *scaleOut) run() error {
+func (s *scaleOut) Run() error {
 	for i := 0; i < s.num; i++ {
-		if err := s.c.addStore(); err != nil {
+		if err := s.c.AddStore(); err != nil {
 			return err
 		}
 	}
 	s.t.addTime = time.Now()
 	for {
-		time.Sleep(time.Minute)
+		time.Sleep(time.Second)
 		bal, err := s.isBalance()
 		if err != nil {
 			return err
@@ -119,7 +127,7 @@ func (s *scaleOut) isBalance() (bool, error) {
 	return true, nil
 }
 
-func (s *scaleOut) collect() error {
+func (s *scaleOut) Collect() error {
 	// create report data
 	data, err := s.createReport()
 	if err != nil {
@@ -127,7 +135,7 @@ func (s *scaleOut) collect() error {
 	}
 
 	// try get last data
-	lastReport, err := s.c.getLastReport()
+	lastReport, err := s.c.GetLastReport()
 	if err != nil {
 		return err
 	}
@@ -144,7 +152,7 @@ func (s *scaleOut) collect() error {
 		}
 	}
 
-	return s.c.sendReport(data, plainText)
+	return s.c.SendReport(data, plainText)
 }
 
 func (s *scaleOut) createReport() (string, error) {

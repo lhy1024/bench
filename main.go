@@ -1,55 +1,70 @@
 package main
 
 import (
+	"flag"
 	"os"
 
 	"github.com/pingcap/log"
 	"go.uber.org/zap"
 )
 
-var benchCases = map[string]func(*cluster) bench{
-	"scaleOut": newScaleOut,
-}
-
-func newBench(name string, c *cluster) bench {
-	if f, ok := benchCases[name]; ok {
-		return f(c)
-	}
-	return nil
-}
+var (
+	withExport = flag.Bool("export", false, "export mode, bench will creat data and export by br")
+	withBench  = flag.Bool("bench", true, "bench mode, it will bench this workload-scale-out")
+	withImport = flag.Bool("import", false, "import mode, it can be used with bench mode")
+	caseName   = flag.String("case", "", "case name, support list:scale-out,tpcc")
+)
 
 func main() {
+	flag.Parse()
+	// todo http head and format valid check
 	var clusterName = os.Getenv("CLUSTER_NAME")
 	var tidbServer = os.Getenv("TIDB_ADDR")
 	var pdServer = os.Getenv("PD_ADDR")
 	var prometheusServer = os.Getenv("PROM_ADDR")
 	var apiServer = os.Getenv("API_SERVER")
-	cluster := newCluster(clusterName, tidbServer, pdServer, prometheusServer, apiServer)
-	// load data
-	loader := newYcsb(cluster)
-	log.Info("load start")
-	err := loader.load()
-	if err != nil {
-		log.Fatal("failed when load", zap.Error(err))
-	}
-	log.Info("load finish")
+	// todo @zeyuan may additional parameters with export
 
-	// bench
-	bench := newBench("scaleOut", cluster)
-	if bench == nil {
-		log.Fatal("error bench name", zap.Error(err))
+	cluster := NewCluster(clusterName, tidbServer, pdServer, prometheusServer, apiServer)
+	benchCases := NewBenches(cluster)
+	benchCase := benchCases.GetBench(*caseName)
+	if benchCase == nil {
+		log.Fatal("error with case name", zap.String("name", *caseName), zap.Strings("support list", benchCases.SupportList()))
 		return
 	}
-	err = bench.run()
-	if err != nil {
-		log.Fatal("failed when bench", zap.Error(err))
-	}
-	log.Info("bench finish")
 
-	// sendReport
-	err = bench.collect()
-	if err != nil {
-		log.Fatal("failed when collect report", zap.Error(err))
+	if *withExport {
+		err := benchCase.Import()
+		if err != nil {
+			log.Fatal("failed when load data", zap.Error(err))
+		}
+		log.Info("load finish")
+		err = benchCase.Export()
+		if err != nil {
+			log.Fatal("failed when backup data", zap.Error(err))
+		}
+		log.Info("backup finish")
+		return
 	}
-	log.Info("report finish")
+
+	log.Info("run in bench mode")
+	if *withImport {
+		err := benchCase.Import()
+		if err != nil {
+			log.Fatal("failed when import", zap.Error(err))
+		}
+		log.Info("import finish")
+	}
+
+	if *withBench {
+		err := benchCase.Run()
+		if err != nil {
+			log.Fatal("failed when bench", zap.Error(err))
+		}
+		err = benchCase.Collect()
+		if err != nil {
+			log.Fatal("failed when collect report", zap.Error(err))
+		}
+		log.Info("bench finish")
+	}
 }

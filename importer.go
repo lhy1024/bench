@@ -3,25 +3,31 @@ package main
 import (
 	"bytes"
 	"errors"
-	"go.uber.org/zap"
 	"os/exec"
 	"strings"
 
 	"github.com/pingcap/log"
 	"github.com/siddontang/go-mysql/client"
+	"go.uber.org/zap"
 )
 
-type loader interface {
-	load() error
+type Importer interface {
+	Import() error
 }
 
 type ycsb struct {
-	c *cluster
+	c               *Cluster
+	workload        string
+	dbName          string
+	withEmptyRegion bool
 }
 
-func newYcsb(c *cluster) loader {
+func NewYCSB(c *Cluster, workload string) Importer {
 	return &ycsb{
-		c: c,
+		c:               c,
+		workload:        workload,
+		dbName:          "test",
+		withEmptyRegion: false,
 	}
 }
 
@@ -33,16 +39,14 @@ func splitAddr(addr string) (string, string, error) {
 	return subs[0], subs[1], nil
 }
 
-func (l *ycsb) load() error {
+func (l *ycsb) Import() error {
 	host, port, err := splitAddr(l.c.tidb)
 	if err != nil {
 		return err
 	}
-	dbName := "test"
-
 	// go-ycsb insert
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("./go-ycsb/go-ycsb", "load", "mysql", "-P", "./go-ycsb/workload", "-p", "mysql.user=root", "-p", "mysql.db="+dbName,
+	cmd := exec.Command("./go-ycsb/go-ycsb", "Import", "mysql", "-P", "./go-ycsb/"+l.workload, "-p", "mysql.user=root", "-p", "mysql.db="+l.dbName,
 		"-p", "mysql.host="+host, "-p", "mysql.port="+port)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -52,8 +56,15 @@ func (l *ycsb) load() error {
 		return err
 	}
 
+	if l.withEmptyRegion {
+		return l.split()
+	}
+	return nil
+}
+
+func (l *ycsb) split() error {
 	// split table
-	conn, err := client.Connect(l.c.tidb, "root", "", dbName)
+	conn, err := client.Connect(l.c.tidb, "root", "", l.dbName)
 	if err != nil {
 		return err
 	}
@@ -68,20 +79,5 @@ func (l *ycsb) load() error {
 	if res.RowNumber() < 1000 {
 		return errors.New("split region failed")
 	}
-	return err
-}
-
-type br struct {
-	c *cluster
-}
-
-func newBr(c *cluster) *ycsb {
-	return &ycsb{
-		c: c,
-	}
-}
-
-func (l *br) load() error {
-	// todo @zeyuan
 	return nil
 }
