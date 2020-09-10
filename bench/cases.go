@@ -1,4 +1,4 @@
-package main
+package bench
 
 type Case struct {
 	Exporter

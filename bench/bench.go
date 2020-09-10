@@ -1,4 +1,4 @@
-package main
+package bench
 
 import (
 	"context"
@@ -63,14 +63,15 @@ func NewScaleOut(c *Cluster) Bench {
 }
 
 func (s *scaleOut) Run() error {
+	preStoreNum := s.c.getStoreNum()
 	for i := 0; i < s.num; i++ {
 		if err := s.c.AddStore(); err != nil {
 			return err
 		}
 	}
+	s.waitScaleOut(preStoreNum)
 	s.t.addTime = time.Now()
 	for {
-		time.Sleep(time.Second)
 		bal, err := s.isBalance()
 		if err != nil {
 			return err
@@ -78,12 +79,22 @@ func (s *scaleOut) Run() error {
 		if bal {
 			return nil
 		}
+		time.Sleep(time.Second)
+	}
+}
+
+func (s *scaleOut) waitScaleOut(preStoreNum int) {
+	for {
+		time.Sleep(time.Second)
+		if s.num+preStoreNum == s.c.getStoreNum() {
+			return
+		}
 	}
 }
 
 func (s *scaleOut) isBalance() (bool, error) {
 	client, err := api.NewClient(api.Config{
-		Address: s.c.prometheus,
+		Address: s.c.prometheusAddr,
 	})
 	if err != nil {
 		log.Error("error creating client", zap.Error(err))
@@ -158,7 +169,7 @@ func (s *scaleOut) Collect() error {
 func (s *scaleOut) createReport() (string, error) {
 	rep := &stats{BalanceInterval: int(s.t.balanceTime.Sub(s.t.addTime).Seconds())}
 	client, err := api.NewClient(api.Config{
-		Address: s.c.prometheus,
+		Address: s.c.prometheusAddr,
 	})
 	if err != nil {
 		log.Error("error creating client", zap.Error(err))

@@ -1,4 +1,4 @@
-package main
+package bench
 
 import (
 	"bytes"
@@ -40,13 +40,13 @@ func splitAddr(addr string) (string, string, error) {
 }
 
 func (l *ycsb) Import() error {
-	host, port, err := splitAddr(l.c.tidb)
+	host, port, err := splitAddr(l.c.tidbAddr)
 	if err != nil {
 		return err
 	}
 	// go-ycsb insert
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("./go-ycsb/go-ycsb", "Import", "mysql", "-P", "./go-ycsb/"+l.workload, "-p", "mysql.user=root", "-p", "mysql.db="+l.dbName,
+	cmd := exec.Command("./go-ycsb/go-ycsb", "load", "mysql", "-P", "./go-ycsb/"+l.workload, "-p", "mysql.user=root", "-p", "mysql.db="+l.dbName,
 		"-p", "mysql.host="+host, "-p", "mysql.port="+port)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -64,7 +64,7 @@ func (l *ycsb) Import() error {
 
 func (l *ycsb) split() error {
 	// split table
-	conn, err := client.Connect(l.c.tidb, "root", "", l.dbName)
+	conn, err := client.Connect(l.c.tidbAddr, "root", "", l.dbName)
 	if err != nil {
 		return err
 	}

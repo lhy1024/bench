@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"os"
 
+	"github.com/lhy1024/bench/bench"
 	"github.com/pingcap/log"
 	"go.uber.org/zap"
 )
@@ -17,16 +17,8 @@ var (
 
 func main() {
 	flag.Parse()
-	// todo http head and format valid check
-	var clusterName = os.Getenv("CLUSTER_NAME")
-	var tidbServer = os.Getenv("TIDB_ADDR")
-	var pdServer = os.Getenv("PD_ADDR")
-	var prometheusServer = os.Getenv("PROM_ADDR")
-	var apiServer = os.Getenv("API_SERVER")
-	// todo @zeyuan may additional parameters with export
-
-	cluster := NewCluster(clusterName, tidbServer, pdServer, prometheusServer, apiServer)
-	benchCases := NewBenches(cluster)
+	cluster := bench.NewCluster()
+	benchCases := bench.NewBenches(cluster)
 	benchCase := benchCases.GetBench(*caseName)
 	if benchCase == nil {
 		log.Fatal("error with case name", zap.String("name", *caseName), zap.Strings("support list", benchCases.SupportList()))

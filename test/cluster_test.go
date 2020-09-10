@@ -1,8 +1,10 @@
-package main
+package test
 
 import (
 	"testing"
+	"time"
 
+	"github.com/lhy1024/bench/bench"
 	. "github.com/pingcap/check"
 )
 
@@ -14,14 +16,25 @@ type testClusterSuite struct{}
 
 var _ = Suite(&testClusterSuite{})
 
+func (s *testClusterSuite) SetUpSuite(c *C) {
+	go mockServer()
+	time.Sleep(1 * time.Second)
+}
+
 func (s *testClusterSuite) TestScaleOut(c *C) {
-	cluster := NewCluster("test", "", "", "", "http://172.16.5.110:8000")
+	cluster := bench.NewCluster()
+	cluster.SetApiServer("http://" + mockServerAddr)
+	cluster.SetName("test")
+
 	err := cluster.AddStore()
 	c.Assert(err, IsNil)
 }
 
 func (s *testClusterSuite) TestReport(c *C) {
-	cluster := NewCluster("test", "", "", "", "http://172.16.5.110:8000")
+	cluster := bench.NewCluster()
+	cluster.SetApiServer("http://" + mockServerAddr)
+	cluster.SetName("test")
+
 	lastReport, err := cluster.GetLastReport()
 	c.Assert(err, IsNil)
 	c.Assert(lastReport, IsNil)
