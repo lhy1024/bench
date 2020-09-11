@@ -1,14 +1,11 @@
 package bench
 
 import (
-	"bytes"
-	"errors"
-	"os/exec"
 	"strings"
 
-	"github.com/pingcap/log"
+	"github.com/lhy1024/bench/utils"
+	"github.com/pingcap/errors"
 	"github.com/siddontang/go-mysql/client"
-	"go.uber.org/zap"
 )
 
 type Importer interface {
@@ -45,13 +42,9 @@ func (l *ycsb) Import() error {
 		return err
 	}
 	// go-ycsb insert
-	var stdout, stderr bytes.Buffer
-	cmd := exec.Command("./go-ycsb/go-ycsb", "load", "mysql", "-P", "./go-ycsb/"+l.workload, "-p", "mysql.user=root", "-p", "mysql.db="+l.dbName,
+	cmd := utils.NewCommand("./go-ycsb/go-ycsb", "Import", "mysql", "-P", "./go-ycsb/"+l.workload, "-p", "mysql.user=root", "-p", "mysql.db="+l.dbName,
 		"-p", "mysql.host="+host, "-p", "mysql.port="+port)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
 	err = cmd.Run()
-	log.Debug("go-ycsb", zap.Strings("cmd", cmd.Args), zap.String("stdout", stdout.String()), zap.String("stderr", stderr.String()))
 	if err != nil {
 		return err
 	}
