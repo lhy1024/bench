@@ -1,17 +1,15 @@
 package bench
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
-	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
-	"github.com/prometheus/common/model"
 	"go.uber.org/zap"
 )
 
@@ -44,6 +42,11 @@ type stats struct {
 	PrevCompactionRate     float64 `json:"prevCompactionRate"`
 	CurCompactionRate      float64 `json:"curCompactionRate"`
 }
+
+const (
+	Int  = iota
+	Float64
+)
 
 type scaleOut struct {
 	c   *Cluster
@@ -93,43 +96,29 @@ func (s *scaleOut) waitScaleOut(preStoreNum int) {
 }
 
 func (s *scaleOut) isBalance() (bool, error) {
-	client, err := api.NewClient(api.Config{
-		Address: s.c.prometheusAddr,
-	})
-	if err != nil {
-		log.Error("error creating client", zap.Error(err))
-		return false, nil
-	}
-
-	v1api := v1.NewAPI(client)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
 	r := v1.Range{
 		Start: time.Now().Add(-9 * time.Minute),
 		End:   time.Now(),
 		Step:  time.Minute,
 	}
-	result, warnings, err := v1api.QueryRange(ctx, "pd_scheduler_store_status{type=\"region_score\"}", r)
+	matrix, err := s.c.getMatrixMetric("pd_scheduler_store_status{type=\"region_score\"}", r)
 	if err != nil {
 		return false, err
 	}
-	if len(warnings) > 0 {
-		log.Warn("query has warnings")
-	}
-	matrix := result.(model.Matrix)
-	for _, data := range matrix {
-		if len(data.Values) != 10 {
+	// if low deviation in a series of scores applies to all stores, then it is balanced.
+	for _, scores := range matrix {
+		if len(scores) != 10 {
 			return false, nil
 		}
 		mean := 0.0
 		dev := 0.0
-		for _, v := range data.Values {
-			mean += float64(v.Value) / 10
+		for _, score := range scores {
+			mean += score / 10
 		}
-		for _, v := range data.Values {
-			dev += (float64(v.Value) - mean) * (float64(v.Value) - mean) / 10
+		for _, score := range scores {
+			dev += (score - mean) * (score - mean) / 10
 		}
-		if mean*mean*0.1 < dev {
+		if mean*mean*0.02 < dev {
 			return false, nil
 		}
 	}
@@ -166,126 +155,56 @@ func (s *scaleOut) Collect() error {
 	return s.c.SendReport(data, plainText)
 }
 
+func (s *scaleOut) queryPrevCur(query string, prevArg, curArg interface{}, typ int) error {
+	prevValue, err := s.c.getMetric(query, s.t.addTime)
+	if err != nil {
+		return err
+	}
+	curValue, err := s.c.getMetric(query, s.t.balanceTime)
+	if err != nil {
+		return err
+	}
+	if typ == Int {
+		*(prevArg.(*int)) = int(prevValue)
+		*(curArg.(*int)) = int(curValue)
+	} else if typ == Float64 {
+		*(prevArg.(*float64)) = prevValue
+		*(curArg.(*float64)) = curValue
+	} else {
+		return errors.New("Type not supported")
+	}
+	return nil
+}
+
 func (s *scaleOut) createReport() (string, error) {
 	rep := &stats{BalanceInterval: int(s.t.balanceTime.Sub(s.t.addTime).Seconds())}
-	client, err := api.NewClient(api.Config{
-		Address: s.c.prometheusAddr,
-	})
+	err := s.queryPrevCur("sum(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"})"+
+		" / (sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"}) + 1)",
+		&rep.PrevLatency, &rep.CurLatency, Float64)
 	if err != nil {
-		log.Error("error creating client", zap.Error(err))
+		return "", err
 	}
 
-	v1api := v1.NewAPI(client)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	result, warnings, err := v1api.Query(ctx,
-		"sum(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"})"+
-			" / (sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"}) + 1)", s.t.addTime)
+	err = s.queryPrevCur("pd_scheduler_event_count{type=\"balance-leader-scheduler\", name=\"schedule\"}",
+		&rep.PrevBalanceLeaderCount, &rep.CurBalanceLeaderCount, Int)
 	if err != nil {
-		log.Error("error querying Prometheus", zap.Error(err))
-	}
-	if len(warnings) > 0 {
-		log.Warn("query has warnings")
-	}
-	vector := result.(model.Vector)
-	if len(vector) >= 1 {
-		rep.PrevLatency = float64(vector[0].Value)
+		return "", err
 	}
 
-	result, warnings, err = v1api.Query(ctx,
-		"sum(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"})"+
-			" / (sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"}) + 1)", s.t.balanceTime)
+	err = s.queryPrevCur("pd_scheduler_event_count{type=\"balance-region-scheduler\", name=\"schedule\"}",
+		&rep.PrevBalanceRegionCount, &rep.CurBalanceRegionCount, Int)
 	if err != nil {
-		log.Error("error querying Prometheus", zap.Error(err))
-	}
-	if len(warnings) > 0 {
-		log.Warn("query has warnings")
-	}
-	vector = result.(model.Vector)
-	if len(vector) >= 1 {
-		rep.CurLatency = float64(vector[0].Value)
+		return "", err
 	}
 
-	result, warnings, err = v1api.Query(ctx,
-		"pd_scheduler_event_count{type=\"balance-leader-scheduler\", name=\"schedule\"}", s.t.balanceTime)
+	err = s.queryPrevCur("sum(tikv_engine_compaction_flow_bytes)", &rep.PrevCompactionRate, &rep.CurCompactionRate, Float64)
 	if err != nil {
-		log.Error("error querying Prometheus", zap.Error(err))
-	}
-	if len(warnings) > 0 {
-		log.Warn("query has warnings")
-	}
-	vector = result.(model.Vector)
-	if len(vector) >= 1 {
-		rep.CurBalanceLeaderCount = int(vector[0].Value)
+		return "", err
 	}
 
-	result, warnings, err = v1api.Query(ctx,
-		"pd_scheduler_event_count{type=\"balance-region-scheduler\", name=\"schedule\"}", s.t.balanceTime)
-	if err != nil {
-		log.Error("error querying Prometheus", zap.Error(err))
-	}
-	if len(warnings) > 0 {
-		log.Warn("query has warnings")
-	}
-	vector = result.(model.Vector)
-	if len(vector) >= 1 {
-		rep.CurBalanceRegionCount = int(vector[0].Value)
-	}
-
-	result, warnings, err = v1api.Query(ctx,
-		"pd_scheduler_event_count{type=\"balance-leader-scheduler\", name=\"schedule\"}", s.t.addTime)
-	if err != nil {
-		log.Error("error querying Prometheus", zap.Error(err))
-	}
-	if len(warnings) > 0 {
-		log.Warn("query has warnings")
-	}
-	vector = result.(model.Vector)
-	if len(vector) >= 1 {
-		rep.PrevBalanceLeaderCount = int(vector[0].Value)
-	}
-
-	result, warnings, err = v1api.Query(ctx,
-		"pd_scheduler_event_count{type=\"balance-region-scheduler\", name=\"schedule\"}", s.t.addTime)
-	if err != nil {
-		log.Error("error querying Prometheus", zap.Error(err))
-	}
-	if len(warnings) > 0 {
-		log.Warn("query has warnings")
-	}
-	vector = result.(model.Vector)
-	if len(vector) >= 1 {
-		rep.PrevBalanceRegionCount = int(vector[0].Value)
-	}
 	bytes, err := json.Marshal(rep)
 	if err != nil {
 		log.Error("marshal error", zap.Error(err))
-	}
-
-	result, warnings, err = v1api.Query(ctx,
-		"sum(tikv_engine_compaction_flow_bytes)", s.t.balanceTime)
-	if err != nil {
-		log.Error("error querying Prometheus", zap.Error(err))
-	}
-	if len(warnings) > 0 {
-		log.Warn("query has warnings")
-	}
-	vector = result.(model.Vector)
-	if len(vector) >= 1 {
-		rep.PrevCompactionRate = float64(vector[0].Value)
-	}
-
-	result, warnings, err = v1api.Query(ctx,
-		"sum(tikv_engine_compaction_flow_bytes)", time.Now())
-	if err != nil {
-		log.Error("error querying Prometheus", zap.Error(err))
-	}
-	if len(warnings) > 0 {
-		log.Warn("query has warnings")
-	}
-	vector = result.(model.Vector)
-	if len(vector) >= 1 {
-		rep.CurCompactionRate = float64(vector[0].Value)
 	}
 
 	return string(bytes), err
