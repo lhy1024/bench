@@ -40,6 +40,10 @@ type stats struct {
 	CurLatency             float64 `json:"curLatency"`
 	PrevCompactionRate     float64 `json:"prevCompactionRate"`
 	CurCompactionRate      float64 `json:"curCompactionRate"`
+	PrevApplyLog           float64 `json:"prevApplyLog"`
+	CurApplyLog            float64 `json:"curApplyLog"`
+	PrevDbMutex            float64 `json:"prevDbMutex"`
+	CurDbMutex             float64 `json:"curDbMutex"`
 }
 
 const (
@@ -201,6 +205,19 @@ func (s *scaleOut) createReport() (string, error) {
 		return "", err
 	}
 
+	err = s.queryPrevCur("sum(tikv_raftstore_apply_log_duration_seconds_sum) / (sum(tikv_raftstore_apply_log_duration_seconds_count) + 1)",
+		&rep.PrevApplyLog, &rep.CurApplyLog, Float64)
+	if err != nil {
+		return "", err
+	}
+
+	err = s.queryPrevCur("sum(tikv_raftstore_apply_perf_context_time_duration_secs_sum{type=\"db_mutex_lock_nanos\"}) / "+
+		"(sum(tikv_raftstore_apply_perf_context_time_duration_secs_count{type=\"db_mutex_lock_nanos\"}) + 1)",
+		&rep.PrevDbMutex, &rep.CurDbMutex, Float64)
+	if err != nil {
+		return "", err
+	}
+
 	bytes, err := json.Marshal(rep)
 	if err != nil {
 		log.Error("marshal error", zap.Error(err))
@@ -211,7 +228,7 @@ func (s *scaleOut) createReport() (string, error) {
 
 func reportLine(head string, last float64, cur float64) string {
 	headPart := "\t* " + head + ": "
-	curPart := fmt.Sprintf("%.2f ", cur)
+	curPart := fmt.Sprintf("%.8f ", cur)
 	deltaPart := fmt.Sprintf("delta: %.2f%%  \n", (cur-last)*100/(last+1))
 	return headPart + curPart + deltaPart
 }
@@ -249,6 +266,10 @@ func (s *scaleOut) mergeReport(lastReport, report string) (plainText string, err
 		last.CurCompactionRate-last.PrevCompactionRate, cur.CurCompactionRate-cur.PrevCompactionRate)
 	plainText += latencyTag + reportLine("prev_query_latency", last.PrevLatency, cur.PrevLatency)
 	plainText += reportLine("cur_query_latency", last.CurLatency, cur.CurLatency)
+	plainText += reportLine("prev_apply_log_latency", last.PrevApplyLog, cur.PrevApplyLog)
+	plainText += reportLine("cur_apply_log_latency", last.CurApplyLog, cur.CurApplyLog)
+	plainText += reportLine("prev_db_mutex_latency", last.PrevDbMutex, cur.PrevDbMutex)
+	plainText += reportLine("cur_db_mutex_latency", last.CurDbMutex, cur.CurDbMutex)
 	plainText += "```  \n"
 	return
 }
