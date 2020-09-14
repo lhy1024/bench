@@ -20,9 +20,8 @@ type Bench interface {
 
 func CreateScaleOutCase(cluster *Cluster) *Case {
 	return &Case{
-		Exporter: NewBR(cluster),
-		Importer: NewYCSB(cluster, "workload-scale-out"),
-		Bench:    NewScaleOut(cluster),
+		Generator: NewYCSB(cluster, "workload-scale-out"),
+		Bench:     NewScaleOut(cluster),
 	}
 }
 
@@ -44,7 +43,7 @@ type stats struct {
 }
 
 const (
-	Int  = iota
+	Int = iota
 	Float64
 )
 

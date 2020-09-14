@@ -9,10 +9,9 @@ import (
 )
 
 var (
-	withExport = flag.Bool("export", false, "export mode, bench will creat data and export by br")
-	withBench  = flag.Bool("bench", true, "bench mode, it will bench this workload-scale-out")
-	withImport = flag.Bool("import", false, "import mode, it can be used with bench mode")
-	caseName   = flag.String("case", "", "case name, support list:scale-out,tpcc")
+	withBench    = flag.Bool("bench", true, "bench mode, it will bench this workload-scale-out")
+	withGenerate = flag.Bool("generate", false, "generate mode,it will allow bench in empty database or only generate data")
+	caseName     = flag.String("case", "", "case name, support list:scale-out,tpcc")
 )
 
 func main() {
@@ -25,27 +24,12 @@ func main() {
 		return
 	}
 
-	if *withExport {
-		err := benchCase.Import()
+	if *withGenerate {
+		err := benchCase.Generate()
 		if err != nil {
-			log.Fatal("failed when load data", zap.Error(err))
+			log.Fatal("failed when generate data", zap.Error(err))
 		}
-		log.Info("load finish")
-		err = benchCase.Export()
-		if err != nil {
-			log.Fatal("failed when backup data", zap.Error(err))
-		}
-		log.Info("backup finish")
-		return
-	}
-
-	log.Info("run in bench mode")
-	if *withImport {
-		err := benchCase.Import()
-		if err != nil {
-			log.Fatal("failed when import", zap.Error(err))
-		}
-		log.Info("import finish")
+		log.Info("generate data finish")
 	}
 
 	if *withBench {

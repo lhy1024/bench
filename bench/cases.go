@@ -1,8 +1,7 @@
 package bench
 
 type Case struct {
-	Exporter
-	Importer
+	Generator
 	Bench
 }
 
