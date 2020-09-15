@@ -74,3 +74,14 @@ func (l *ycsb) split() error {
 	}
 	return nil
 }
+
+func NewEmptyGenerator() Generator {
+	return &emptyGenerator{}
+}
+
+type emptyGenerator struct {
+}
+
+func (l *emptyGenerator) Generate() error {
+	return nil
+}

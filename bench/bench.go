@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/lhy1024/bench/utils"
 	"github.com/pingcap/errors"
 	"github.com/pingcap/log"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
@@ -272,4 +273,31 @@ func (s *scaleOut) mergeReport(lastReport, report string) (plainText string, err
 	plainText += reportLine("cur_db_mutex_latency", last.CurDbMutex, cur.CurDbMutex)
 	plainText += "```  \n"
 	return
+}
+
+type simulatorBench struct {
+	simPath string
+	c       *Cluster
+}
+
+func (s *simulatorBench) Run() error {
+	cmd := utils.NewCommand(s.simPath)
+	err := cmd.Run()
+	return err
+}
+
+func (s *simulatorBench) Collect() error {
+	return nil
+}
+
+func NewSimulator(cluster *Cluster) Bench {
+	path := os.Getenv("SIMULATOR_PATH")
+	return &simulatorBench{simPath: path, c: cluster}
+}
+
+func CreateSimulatorCase(cluster *Cluster) *Case {
+	return &Case{
+		Generator: NewEmptyGenerator(),
+		Bench:     NewSimulator(cluster),
+	}
 }

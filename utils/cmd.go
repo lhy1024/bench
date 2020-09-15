@@ -23,7 +23,7 @@ func (command *Command) Run() error {
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
-	log.Debug(cmd.String(), zap.Strings("cmd", cmd.Args),
+	log.Debug(cmd.Path, zap.Strings("cmd", cmd.Args),
 		zap.String("stdout", stdout.String()), zap.String("stderr", stderr.String()))
 	return err
 }

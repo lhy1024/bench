@@ -12,6 +12,7 @@ type Benches struct {
 func NewBenches(cluster *Cluster) *Benches {
 	caseMap := make(map[string]*Case)
 	caseMap["scale-out"] = CreateScaleOutCase(cluster)
+	caseMap["sim"] = CreateSimulatorCase(cluster)
 	return &Benches{
 		cases: caseMap,
 	}
