@@ -53,6 +53,7 @@ type WorkloadReport struct {
 }
 
 type Cluster struct {
+	id             string
 	name           string
 	tidbAddr       string
 	pdAddr         string
@@ -63,6 +64,7 @@ type Cluster struct {
 
 func NewCluster() *Cluster {
 	return &Cluster{
+		id:             os.Getenv("CLUSTER_ID"),
 		name:           os.Getenv("CLUSTER_NAME"),
 		tidbAddr:       os.Getenv("TIDB_ADDR"),
 		pdAddr:         os.Getenv("PD_ADDR"),
@@ -76,6 +78,10 @@ func (c *Cluster) SetApiServer(apiAddr string) {
 	c.apiAddr = apiAddr
 }
 
+func (c *Cluster) SetID(id string) {
+	c.id = id
+}
+
 func (c *Cluster) SetName(name string) {
 	c.name = name
 }
@@ -85,7 +91,7 @@ func (c *Cluster) joinUrl(prefix string) string {
 }
 
 func (c *Cluster) getAllResource() ([]ResourceRequestItem, error) {
-	prefix := fmt.Sprintf(ResourcePrefix, c.name)
+	prefix := fmt.Sprintf(ResourcePrefix, c.id)
 	url := c.joinUrl(prefix)
 	resp, err := doRequest(url, http.MethodGet)
 	if err != nil {
@@ -122,7 +128,7 @@ func (c *Cluster) getStoreNum() (num int) {
 }
 
 func (c *Cluster) scaleOut(component string, id uint) error {
-	prefix := fmt.Sprintf(ScaleOutPrefix, c.name, id, component)
+	prefix := fmt.Sprintf(ScaleOutPrefix, c.id, id, component)
 	url := c.joinUrl(prefix)
 	_, err := doRequest(url, http.MethodPost)
 	return err
@@ -138,7 +144,7 @@ func (c *Cluster) AddStore() error {
 }
 
 func (c *Cluster) SendReport(data, plainText string) error {
-	prefix := fmt.Sprintf(ResultsPrefix, c.name)
+	prefix := fmt.Sprintf(ResultsPrefix, c.id)
 	url := c.joinUrl(prefix)
 	return postJSON(url, map[string]interface{}{
 		"data":      data,
@@ -147,7 +153,7 @@ func (c *Cluster) SendReport(data, plainText string) error {
 }
 
 func (c *Cluster) GetLastReport() (*WorkloadReport, error) {
-	prefix := fmt.Sprintf(ResultsPrefix, c.name)
+	prefix := fmt.Sprintf(ResultsPrefix, c.id)
 	url := c.joinUrl(prefix)
 	resp, err := doRequest(url, http.MethodGet)
 	if err != nil {

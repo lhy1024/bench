@@ -24,6 +24,7 @@ func (s *testClusterSuite) SetUpSuite(c *C) {
 func (s *testClusterSuite) TestScaleOut(c *C) {
 	cluster := bench.NewCluster()
 	cluster.SetApiServer("http://" + mockServerAddr)
+	cluster.SetID("1")
 	cluster.SetName("test")
 
 	err := cluster.AddStore()
@@ -33,6 +34,7 @@ func (s *testClusterSuite) TestScaleOut(c *C) {
 func (s *testClusterSuite) TestReport(c *C) {
 	cluster := bench.NewCluster()
 	cluster.SetApiServer("http://" + mockServerAddr)
+	cluster.SetID("1")
 	cluster.SetName("test")
 
 	lastReport, err := cluster.GetLastReport()
