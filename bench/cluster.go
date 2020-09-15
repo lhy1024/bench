@@ -24,19 +24,13 @@ const (
 	ResultsPrefix  = "api/cluster/workload/%v/result"
 )
 
-type Spec struct {
-	CPU  string
-	Mem  string
-	Disk string
-}
-
+// ResourceRequestItem ...
 type ResourceRequestItem struct {
 	gorm.Model
-	ItemID uint   `gorm:"column:item_id;unique;not null" json:"item_id"`
-	Spec   Spec   `gorm:"column:spec;type:longtext;not null" json:"spec"`
-	Status string `gorm:"column:status;type:varchar(255);not null" json:"status"`
-	RRID   uint   `gorm:"column:rr_id;not null" json:"rr_id"`
-	RID    uint   `gorm:"column:r_id;not null" json:"r_id"`
+	ItemID       uint   `gorm:"column:item_id;unique;not null" json:"item_id"`
+	InstanceType string `gorm:"column:instance_type;type:varchar(100);not null" json:"instance_type"`
+	RRID         uint   `gorm:"column:rr_id;not null" json:"rr_id"`
+	RID          uint   `gorm:"column:r_id" json:"r_id"`
 	// Components records which *_servers are serving on this machine
 	Components string `gorm:"column:components" json:"components"`
 }
@@ -224,5 +218,5 @@ func (c *Cluster) getMatrixMetric(query string, r v1.Range) ([][]float64, error)
 		}
 		ret = append(ret, r)
 	}
- 	return ret, nil
+	return ret, nil
 }
