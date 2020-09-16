@@ -281,7 +281,7 @@ type simulatorBench struct {
 }
 
 func (s *simulatorBench) Run() error {
-	cmd := utils.NewCommand(s.simPath)
+	cmd := utils.NewCommand(s.simPath, s.c.pdAddr)
 	err := cmd.Run()
 	return err
 }
@@ -291,7 +291,7 @@ func (s *simulatorBench) Collect() error {
 }
 
 func NewSimulator(cluster *Cluster) Bench {
-	path := os.Getenv("SIMULATOR_PATH")
+	path := "/scripts/sim"
 	return &simulatorBench{simPath: path, c: cluster}
 }
 
