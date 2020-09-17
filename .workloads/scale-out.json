@@ -1,0 +1,54 @@
+{
+    "cluster_request": {
+        "name": "pd_bench",
+        "version": "nightly",
+        "pd_version": "$PD_VERSION"
+    },
+    "cluster_request_topologies": [
+        {
+            "component": "tidb",
+            "deploy_path": "/data1",
+            "rri_item_id": 1
+        },
+        {
+            "component": "pd",
+            "deploy_path": "/data1",
+            "rri_item_id": 1
+        },
+        {
+            "component": "tikv",
+            "deploy_path": "/data1",
+            "rri_item_id": 2
+        },
+        {
+            "component": "tikv",
+            "deploy_path": "/data1",
+            "rri_item_id": 3
+        },
+        {
+            "component": "tikv",
+            "deploy_path": "/data1",
+            "rri_item_id": 4
+        },
+        {
+            "component": "prometheus",
+            "deploy_path": "/data1",
+            "rri_item_id": 1
+        },
+        {
+            "component": "grafana",
+            "deploy_path": "/data1",
+            "rri_item_id": 1
+        }
+    ],
+    "cluster_workload": {
+        "docker_image": "lhy1024/bench:latest",
+        "cmd": "/bin/bench",
+        "args": [
+            "--case",
+            "scale-out"
+        ],
+        "restore_path": "mybucket/ycsb",
+        "rri_item_id": 1
+    }
+}

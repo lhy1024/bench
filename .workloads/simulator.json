@@ -1,0 +1,34 @@
+{
+    "cluster_request": {
+        "name": "pd_bench",
+        "version": "nightly",
+        "pd_version": "$PD_VERSION"
+    },
+    "cluster_request_topologies": [
+        {
+            "component": "pd",
+            "deploy_path": "/data1",
+            "rri_item_id": 1
+        },
+        {
+            "component": "prometheus",
+            "deploy_path": "/data1",
+            "rri_item_id": 1
+        },
+        {
+            "component": "grafana",
+            "deploy_path": "/data1",
+            "rri_item_id": 1
+        }
+    ],
+    "cluster_workload": {
+        "docker_image": "lhy1024/bench:latest",
+        "cmd": "/bin/bench",
+        "args": [
+            "--case",
+            "sim"
+        ],
+        "rri_item_id": 1,
+        "artifact_dir": "/artifacts"
+    }
+}
