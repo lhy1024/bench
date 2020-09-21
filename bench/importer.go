@@ -44,7 +44,7 @@ func (l *ycsb) Generate() error {
 	// go-ycsb insert
 	cmd := utils.NewCommand("./go-ycsb/go-ycsb", "load", "mysql", "-P", "./go-ycsb/"+l.workload, "-p", "mysql.user=root", "-p", "mysql.db="+l.dbName,
 		"-p", "mysql.host="+host, "-p", "mysql.port="+port)
-	err = cmd.Run()
+	_, err = cmd.Run()
 	if err != nil {
 		return err
 	}

@@ -278,16 +278,34 @@ func (s *scaleOut) mergeReport(lastReport, report string) (plainText string, err
 type simulatorBench struct {
 	simPath string
 	c       *Cluster
+	report  string
 }
 
 func (s *simulatorBench) Run() error {
 	cmd := utils.NewCommand(s.simPath, s.c.pdAddr)
-	err := cmd.Run()
-	return err
+	out, err := cmd.Run()
+	if err != nil {
+		return err
+	}
+	s.report = out
+	return nil
 }
 
 func (s *simulatorBench) Collect() error {
-	return nil
+	lastReport, err := s.c.GetLastReport()
+	if err != nil {
+		return err
+	}
+
+	var plainText string
+	if lastReport == nil { //first send
+		plainText = ""
+	} else { //second send
+		// todo: more complicated comparing
+		plainText = lastReport.Data + "\n  " + s.report
+		log.Info("Concat report success", zap.String("concat result", plainText))
+	}
+	return s.c.SendReport(s.report, plainText)
 }
 
 func NewSimulator(cluster *Cluster) Bench {
