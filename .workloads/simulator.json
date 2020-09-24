@@ -27,7 +27,7 @@
         "cmd": "/bin/bench",
         "args": [
             "--case",
-            "sim"
+            "sim-import"
         ],
         "rri_item_id": 1,
         "artifact_dir": "/artifacts"

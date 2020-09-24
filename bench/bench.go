@@ -298,26 +298,38 @@ func (s *simulatorBench) Collect() error {
 	}
 
 	var plainText string
+	var data string
 	if lastReport == nil { //first send
 		plainText = ""
+		data = createSimReport("last", s.report)
 	} else { //second send
-		// todo: more complicated comparing
-		plainText = "```diff\n   "
-		plainText += lastReport.Data + "\n  " + s.report
-		plainText += "```\n   "
+		data = createSimReport("cur", s.report)
+		plainText = "```diff\n  "
+		plainText += lastReport.Data
+		plainText += data
+		plainText += "```\n  "
 		log.Info("Concat report success", zap.String("concat result", plainText))
 	}
-	return s.c.SendReport(s.report, plainText)
+	return s.c.SendReport(data, plainText)
 }
 
-func NewSimulator(cluster *Cluster) Bench {
-	path := "/scripts/sim"
+func NewSimulator(cluster *Cluster, simCase string) Bench {
+	path := "/scripts/simulator/" + simCase
 	return &simulatorBench{simPath: path, c: cluster}
 }
 
-func CreateSimulatorCase(cluster *Cluster) *Case {
+func CreateSimulatorCase(cluster *Cluster, simCase string) *Case {
 	return &Case{
 		Generator: NewEmptyGenerator(),
-		Bench:     NewSimulator(cluster),
+		Bench:     NewSimulator(cluster, simCase),
 	}
+}
+
+func createSimReport(head, report string) string {
+	plainText := head + ":\n  "
+	plainText += "\t*artifacts link: " + os.Getenv("ARTIFACT_URL")
+	plainText += "\t*simulator report:\n  "
+	plainText += report + "\n  "
+
+	return plainText
 }
