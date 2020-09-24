@@ -2,7 +2,8 @@
     "cluster_request": {
         "name": "pd_bench",
         "version": "nightly",
-        "pd_version": "$PD_VERSION"
+        "pd_version": "$PD_VERSION",
+        "tikv_version": "$TIKV_VERSION"
     },
     "cluster_request_topologies": [
         {
