@@ -27,12 +27,13 @@ FROM alpine:3.5
 
 WORKDIR /artifacts
 RUN mkdir conf
+RUN mkdir -p /scripts/simulator
 
 COPY --from=builder /src/bin/* /bin/
-COPY --from=builder /src/scripts/* /scripts/
+COPY --from=builder /src/scripts/simulator/* /scripts/simulator/
 COPY --from=pdbuilder /go/src/github.com/tikv/pd/bin/pd-simulator /bin/
 COPY --from=pdbuilder /go/src/github.com/tikv/pd/conf/simconfig.toml conf/simconfig.toml
 
-RUN chmod +x /scripts/*
+RUN chmod +x /scripts/simulator/*
 
 CMD ["/bin/bench"]
