@@ -1,2 +1,2 @@
 #!/bin/sh
-/bin/pd-simulator --regionNum 10000 --case import-data --pd "$1" | tee simLog
+/bin/pd-simulator --regionNum 10000 --case import-data --pd "$1" --simLog info --simLogFile simLog

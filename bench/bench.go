@@ -304,10 +304,10 @@ func (s *simulatorBench) Collect() error {
 		data = createSimReport("last", s.report)
 	} else { //second send
 		data = createSimReport("cur", s.report)
-		plainText = "```diff\n  "
+		plainText = "```diff  \n"
 		plainText += lastReport.Data
 		plainText += data
-		plainText += "```\n  "
+		plainText += "```  \n"
 		log.Info("Concat report success", zap.String("concat result", plainText))
 	}
 	return s.c.SendReport(data, plainText)
@@ -326,10 +326,10 @@ func CreateSimulatorCase(cluster *Cluster, simCase string) *Case {
 }
 
 func createSimReport(head, report string) string {
-	plainText := head + ":\n  "
-	plainText += "\t*artifacts link: " + os.Getenv("ARTIFACT_URL")
-	plainText += "\t*simulator report:\n  "
-	plainText += report + "\n  "
+	plainText := head + ":  \n"
+	plainText += "\t*artifacts link: " + os.Getenv("ARTIFACT_URL") + "/workload.tar.gz   \n"
+	plainText += "\t*simulator report:  \n"
+	plainText += report + "  \n"
 
 	return plainText
 }
