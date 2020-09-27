@@ -3,7 +3,7 @@ MAINTAINER lhy1024
 ENV GO111MODULE=on
 WORKDIR /src
 COPY . .
-RUN go build -o bin/bench *.go
+RUN make build
 
 
 FROM golang:1.14-alpine as pdbuilder
