@@ -1,8 +1,12 @@
 FROM golang:1.14-alpine as builder
 MAINTAINER lhy1024
 RUN apk add --no-cache \
+    make \
     git \
-    make
+    bash \
+    curl \
+    gcc \
+    g++
 ENV GO111MODULE=on
 WORKDIR /src
 COPY . .
