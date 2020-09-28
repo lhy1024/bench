@@ -8,18 +8,18 @@ import (
 	"github.com/siddontang/go-mysql/client"
 )
 
-type Generator interface {
+type generator interface {
 	Generate() error
 }
 
 type ycsb struct {
-	c               *Cluster
+	c               *cluster
 	workload        string
 	dbName          string
 	withEmptyRegion bool
 }
 
-func NewYCSB(c *Cluster, workload string) Generator {
+func newYCSB(c *cluster, workload string) generator {
 	return &ycsb{
 		c:               c,
 		workload:        workload,
@@ -28,14 +28,16 @@ func NewYCSB(c *Cluster, workload string) Generator {
 	}
 }
 
-func splitAddr(addr string) (string, string, error) {
+func splitAddr(addr string) (host string, port string, err error) {
 	subs := strings.Split(addr, ":")
 	if len(subs) != 2 {
 		return "", "", errors.New("addr is wrong")
 	}
-	return subs[0], subs[1], nil
+	host, port = subs[0], subs[1]
+	return host, port, nil
 }
 
+// Generate ...
 func (l *ycsb) Generate() error {
 	host, port, err := splitAddr(l.c.tidbAddr)
 	if err != nil {
@@ -75,13 +77,14 @@ func (l *ycsb) split() error {
 	return nil
 }
 
-func NewEmptyGenerator() Generator {
+func newEmptyGenerator() generator {
 	return &emptyGenerator{}
 }
 
 type emptyGenerator struct {
 }
 
+// Generate ...
 func (l *emptyGenerator) Generate() error {
 	return nil
 }

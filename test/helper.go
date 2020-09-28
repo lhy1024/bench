@@ -53,7 +53,7 @@ func (h *handler) getResults(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) postResults(w http.ResponseWriter, r *http.Request) {
 	var report bench.WorkloadReport
-	err := readJson(r.Body, &report)
+	err := readJSON(r.Body, &report)
 	if err != nil {
 		err = h.r.JSON(w, http.StatusBadGateway, err.Error())
 	} else {
@@ -93,7 +93,7 @@ func mockServer() {
 	}
 }
 
-func readJson(r io.ReadCloser, data interface{}) error {
+func readJSON(r io.ReadCloser, data interface{}) error {
 	var err error
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
