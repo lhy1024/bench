@@ -27,7 +27,7 @@ func (c *benchCases) GetBench(name string) *benchCase {
 	return nil
 }
 
-// SupportList return all support bench case
+// SupportList return all support bench cases
 func (c *benchCases) SupportList() []string {
 	var ret []string
 	for name := range c.cases {

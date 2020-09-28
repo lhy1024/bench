@@ -76,17 +76,17 @@ func NewCluster() *cluster {
 	}
 }
 
-// SetAPIServer ...
+// SetAPIServer is used to set config.
 func (c *cluster) SetAPIServer(apiAddr string) {
 	c.apiAddr = apiAddr
 }
 
-// SetID ...
+// SetID is used to set config.
 func (c *cluster) SetID(id string) {
 	c.id = id
 }
 
-// SetName ...
+// SetName is used to set config.
 func (c *cluster) SetName(name string) {
 	c.name = name
 }
@@ -139,7 +139,7 @@ func (c *cluster) scaleOut(component string, id uint) error {
 	return err
 }
 
-// AddStore
+// AddStore is used to add store.
 func (c *cluster) AddStore() error {
 	component := "tikv"
 	id, err := c.getAvailableResourceID(component)
@@ -149,7 +149,7 @@ func (c *cluster) AddStore() error {
 	return c.scaleOut(component, id)
 }
 
-// SendReport
+// SendReport is used to send report.
 func (c *cluster) SendReport(data, plainText string) error {
 	prefix := fmt.Sprintf(resultsPrefix, c.id)
 	url := c.joinURL(prefix)
@@ -159,7 +159,7 @@ func (c *cluster) SendReport(data, plainText string) error {
 	})
 }
 
-// GetLastReport
+// GetLastReport is used to get the last report.
 func (c *cluster) GetLastReport() (*WorkloadReport, error) {
 	prefix := fmt.Sprintf(resultsPrefix, c.id)
 	url := c.joinURL(prefix)

@@ -37,7 +37,7 @@ func splitAddr(addr string) (host string, port string, err error) {
 	return host, port, nil
 }
 
-// Generate ...
+// Generate is used to generate data.
 func (l *ycsb) Generate() error {
 	host, port, err := splitAddr(l.c.tidbAddr)
 	if err != nil {
@@ -84,7 +84,7 @@ func newEmptyGenerator() generator {
 type emptyGenerator struct {
 }
 
-// Generate ...
+// Generate is used to generate data.
 func (l *emptyGenerator) Generate() error {
 	return nil
 }
