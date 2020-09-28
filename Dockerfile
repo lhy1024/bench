@@ -1,9 +1,17 @@
 FROM golang:1.14-alpine as builder
 MAINTAINER lhy1024
+RUN apk add --no-cache \
+    make \
+    git \
+    bash \
+    curl \
+    gcc \
+    g++
+
 ENV GO111MODULE=on
 WORKDIR /src
 COPY . .
-RUN go build -o bin/bench *.go
+RUN make build
 
 
 FROM golang:1.14-alpine as pdbuilder
@@ -15,7 +23,7 @@ RUN apk add --no-cache \
     curl \
     gcc \
     g++
-   
+
 RUN mkdir -p /go/src/github.com/tikv/pd
 WORKDIR /go/src/github.com/tikv/pd
 
