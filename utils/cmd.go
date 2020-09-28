@@ -8,15 +8,18 @@ import (
 	"go.uber.org/zap"
 )
 
+// Command directly run command
 type Command struct {
 	path string
 	args []string
 }
 
+// NewCommand returns Command
 func NewCommand(path string, args ...string) *Command {
 	return &Command{path: path, args: args}
 }
 
+// Run run command and return result
 func (command *Command) Run() (string, error) {
 	var stdout, stderr bytes.Buffer
 	cmd := exec.Cmd{Path: command.path, Args: command.args}

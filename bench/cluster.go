@@ -19,9 +19,9 @@ import (
 )
 
 const (
-	ResourcePrefix = "api/cluster/resource/%v"
-	ScaleOutPrefix = "api/cluster/scale_out/%v/%v/%v"
-	ResultsPrefix  = "api/cluster/workload/%v/result"
+	resourcePrefix = "api/cluster/resource/%v"
+	scaleOutPrefix = "api/cluster/scale_out/%v/%v/%v"
+	resultsPrefix  = "api/cluster/workload/%v/result"
 )
 
 // ResourceRequestItem ...
@@ -45,6 +45,7 @@ func (r *ResourceRequestItem) hasNum(style string) (num int) {
 	return num
 }
 
+// WorkloadReport ...
 type WorkloadReport struct {
 	gorm.Model
 	CRID      uint    `gorm:"column:cr_id;not null" json:"cr_id"`
@@ -52,7 +53,7 @@ type WorkloadReport struct {
 	PlainText *string `gorm:"column:plaintext" json:"plaintext,omitempty"`
 }
 
-type Cluster struct {
+type cluster struct {
 	id             string
 	name           string
 	tidbAddr       string
@@ -62,8 +63,9 @@ type Cluster struct {
 	client         *http.Client
 }
 
-func NewCluster() *Cluster {
-	return &Cluster{
+// NewCluster return cluster
+func NewCluster() *cluster {
+	return &cluster{
 		id:             os.Getenv("CLUSTER_ID"),
 		name:           os.Getenv("CLUSTER_NAME"),
 		tidbAddr:       os.Getenv("TIDB_ADDR"),
@@ -74,35 +76,38 @@ func NewCluster() *Cluster {
 	}
 }
 
-func (c *Cluster) SetApiServer(apiAddr string) {
+// SetAPIServer is used to set config.
+func (c *cluster) SetAPIServer(apiAddr string) {
 	c.apiAddr = apiAddr
 }
 
-func (c *Cluster) SetID(id string) {
+// SetID is used to set config.
+func (c *cluster) SetID(id string) {
 	c.id = id
 }
 
-func (c *Cluster) SetName(name string) {
+// SetName is used to set config.
+func (c *cluster) SetName(name string) {
 	c.name = name
 }
 
-func (c *Cluster) joinUrl(prefix string) string {
+func (c *cluster) joinURL(prefix string) string {
 	return c.apiAddr + "/" + prefix
 }
 
-func (c *Cluster) getAllResource() ([]ResourceRequestItem, error) {
-	prefix := fmt.Sprintf(ResourcePrefix, c.id)
-	url := c.joinUrl(prefix)
+func (c *cluster) getAllResource() ([]ResourceRequestItem, error) {
+	prefix := fmt.Sprintf(resourcePrefix, c.id)
+	url := c.joinURL(prefix)
 	resp, err := doRequest(url, http.MethodGet)
 	if err != nil {
 		return nil, err
 	}
-	resources := make([]ResourceRequestItem, 0, 0)
+	resources := make([]ResourceRequestItem, 0)
 	err = json.Unmarshal([]byte(resp), &resources)
 	return resources, err
 }
 
-func (c *Cluster) getAvailableResourceID(component string) (uint, error) {
+func (c *cluster) getAvailableResourceID(component string) (uint, error) {
 	resources, err := c.getAllResource()
 	if err != nil {
 		return 0, errors.New("failed to get all resource")
@@ -116,7 +121,7 @@ func (c *Cluster) getAvailableResourceID(component string) (uint, error) {
 	return 0, errors.New("no available resources")
 }
 
-func (c *Cluster) getStoreNum() (num int) {
+func (c *cluster) getStoreNum() (num int) {
 	resources, err := c.getAllResource()
 	if err != nil {
 		return 0
@@ -127,14 +132,15 @@ func (c *Cluster) getStoreNum() (num int) {
 	return num
 }
 
-func (c *Cluster) scaleOut(component string, id uint) error {
-	prefix := fmt.Sprintf(ScaleOutPrefix, c.id, id, component)
-	url := c.joinUrl(prefix)
+func (c *cluster) scaleOut(component string, id uint) error {
+	prefix := fmt.Sprintf(scaleOutPrefix, c.id, id, component)
+	url := c.joinURL(prefix)
 	_, err := doRequest(url, http.MethodPost)
 	return err
 }
 
-func (c *Cluster) AddStore() error {
+// AddStore is used to add store.
+func (c *cluster) AddStore() error {
 	component := "tikv"
 	id, err := c.getAvailableResourceID(component)
 	if err != nil {
@@ -143,24 +149,26 @@ func (c *Cluster) AddStore() error {
 	return c.scaleOut(component, id)
 }
 
-func (c *Cluster) SendReport(data, plainText string) error {
-	prefix := fmt.Sprintf(ResultsPrefix, c.id)
-	url := c.joinUrl(prefix)
+// SendReport is used to send report.
+func (c *cluster) SendReport(data, plainText string) error {
+	prefix := fmt.Sprintf(resultsPrefix, c.id)
+	url := c.joinURL(prefix)
 	return postJSON(url, map[string]interface{}{
 		"data":      data,
 		"plaintext": plainText,
 	})
 }
 
-func (c *Cluster) GetLastReport() (*WorkloadReport, error) {
-	prefix := fmt.Sprintf(ResultsPrefix, c.id)
-	url := c.joinUrl(prefix)
+// GetLastReport is used to get the last report.
+func (c *cluster) GetLastReport() (*WorkloadReport, error) {
+	prefix := fmt.Sprintf(resultsPrefix, c.id)
+	url := c.joinURL(prefix)
 	resp, err := doRequest(url, http.MethodGet)
 	if err != nil {
 		return nil, err
 	}
 
-	reports := make([]WorkloadReport, 0, 0)
+	reports := make([]WorkloadReport, 0)
 	err = json.Unmarshal([]byte(resp), &reports)
 	if err != nil || len(reports) == 0 {
 		return nil, err
@@ -168,7 +176,7 @@ func (c *Cluster) GetLastReport() (*WorkloadReport, error) {
 	return &reports[0], nil
 }
 
-func (c *Cluster) getMetric(query string, t time.Time) (float64, error) {
+func (c *cluster) getMetric(query string, t time.Time) (float64, error) {
 	client, err := api.NewClient(api.Config{
 		Address: c.prometheusAddr,
 	})
@@ -195,7 +203,7 @@ func (c *Cluster) getMetric(query string, t time.Time) (float64, error) {
 	return 0, nil
 }
 
-func (c *Cluster) getMatrixMetric(query string, r v1.Range) ([][]float64, error) {
+func (c *cluster) getMatrixMetric(query string, r v1.Range) ([][]float64, error) {
 	client, err := api.NewClient(api.Config{
 		Address: c.prometheusAddr,
 	})

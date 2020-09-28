@@ -1,0 +1,20 @@
+language: go
+
+go:
+  - 1.14
+
+script:
+  - make ci
+
+matrix:
+  include:
+    - go: 1.14
+      env:
+        - TRAVIS_COVERAGE=1
+      script:
+        - make ci
+      after_success:
+        - go get github.com/mattn/goveralls
+        - travis_wait make travis_coverage
+        - mv overalls.coverprofile coverage.txt
+        - bash <(curl -s https://codecov.io/bash)

@@ -1,31 +1,34 @@
 package bench
 
-type Case struct {
-	Generator
-	Bench
+type benchCase struct {
+	generator
+	bench
 }
 
-type Benches struct {
-	cases map[string]*Case
+type benchCases struct {
+	cases map[string]*benchCase
 }
 
-func NewBenches(cluster *Cluster) *Benches {
-	caseMap := make(map[string]*Case)
-	caseMap["scale-out"] = CreateScaleOutCase(cluster)
-	caseMap["sim-import"] = CreateSimulatorCase(cluster, "import")
-	return &Benches{
+// NewBenches return bench cases
+func NewBenches(cluster *cluster) *benchCases {
+	caseMap := make(map[string]*benchCase)
+	caseMap["scale-out"] = createScaleOutCase(cluster)
+	caseMap["sim-import"] = createSimulatorCase(cluster, "import")
+	return &benchCases{
 		cases: caseMap,
 	}
 }
 
-func (c *Benches) GetBench(name string) *Case {
+// GetBench return bench with name
+func (c *benchCases) GetBench(name string) *benchCase {
 	if f, ok := c.cases[name]; ok {
 		return f
 	}
 	return nil
 }
 
-func (c *Benches) SupportList() []string {
+// SupportList return all support bench cases
+func (c *benchCases) SupportList() []string {
 	var ret []string
 	for name := range c.cases {
 		ret = append(ret, name)

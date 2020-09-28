@@ -14,15 +14,15 @@ import (
 	"go.uber.org/zap"
 )
 
-type Bench interface {
+type bench interface {
 	Run() error
 	Collect() error
 }
 
-func CreateScaleOutCase(cluster *Cluster) *Case {
-	return &Case{
-		Generator: NewYCSB(cluster, "workload-scale-out"),
-		Bench:     NewScaleOut(cluster),
+func createScaleOutCase(cluster *cluster) *benchCase {
+	return &benchCase{
+		generator: newYCSB(cluster, "workload-scale-out"),
+		bench:     newScaleOut(cluster),
 	}
 }
 
@@ -48,17 +48,17 @@ type stats struct {
 }
 
 const (
-	Int = iota
-	Float64
+	typeInt = iota
+	typeFloat64
 )
 
 type scaleOut struct {
-	c   *Cluster
+	c   *cluster
 	t   timePoint
 	num int //scale out num
 }
 
-func NewScaleOut(c *Cluster) Bench {
+func newScaleOut(c *cluster) bench {
 	num, err := strconv.Atoi(os.Getenv("SCALE_NUM"))
 	if err != nil {
 		num = 1 // default
@@ -168,10 +168,10 @@ func (s *scaleOut) queryPrevCur(query string, prevArg, curArg interface{}, typ i
 	if err != nil {
 		return err
 	}
-	if typ == Int {
+	if typ == typeInt {
 		*(prevArg.(*int)) = int(prevValue)
 		*(curArg.(*int)) = int(curValue)
-	} else if typ == Float64 {
+	} else if typ == typeFloat64 {
 		*(prevArg.(*float64)) = prevValue
 		*(curArg.(*float64)) = curValue
 	} else {
@@ -184,37 +184,37 @@ func (s *scaleOut) createReport() (string, error) {
 	rep := &stats{BalanceInterval: int(s.t.balanceTime.Sub(s.t.addTime).Seconds())}
 	err := s.queryPrevCur("sum(tidb_server_handle_query_duration_seconds_sum{sql_type!=\"internal\"})"+
 		" / (sum(tidb_server_handle_query_duration_seconds_count{sql_type!=\"internal\"}) + 1)",
-		&rep.PrevLatency, &rep.CurLatency, Float64)
+		&rep.PrevLatency, &rep.CurLatency, typeFloat64)
 	if err != nil {
 		return "", err
 	}
 
 	err = s.queryPrevCur("pd_scheduler_event_count{type=\"balance-leader-scheduler\", name=\"schedule\"}",
-		&rep.PrevBalanceLeaderCount, &rep.CurBalanceLeaderCount, Int)
+		&rep.PrevBalanceLeaderCount, &rep.CurBalanceLeaderCount, typeInt)
 	if err != nil {
 		return "", err
 	}
 
 	err = s.queryPrevCur("pd_scheduler_event_count{type=\"balance-region-scheduler\", name=\"schedule\"}",
-		&rep.PrevBalanceRegionCount, &rep.CurBalanceRegionCount, Int)
+		&rep.PrevBalanceRegionCount, &rep.CurBalanceRegionCount, typeInt)
 	if err != nil {
 		return "", err
 	}
 
-	err = s.queryPrevCur("sum(tikv_engine_compaction_flow_bytes)", &rep.PrevCompactionRate, &rep.CurCompactionRate, Float64)
+	err = s.queryPrevCur("sum(tikv_engine_compaction_flow_bytes)", &rep.PrevCompactionRate, &rep.CurCompactionRate, typeFloat64)
 	if err != nil {
 		return "", err
 	}
 
 	err = s.queryPrevCur("sum(tikv_raftstore_apply_log_duration_seconds_sum) / (sum(tikv_raftstore_apply_log_duration_seconds_count) + 1)",
-		&rep.PrevApplyLog, &rep.CurApplyLog, Float64)
+		&rep.PrevApplyLog, &rep.CurApplyLog, typeFloat64)
 	if err != nil {
 		return "", err
 	}
 
 	err = s.queryPrevCur("sum(tikv_raftstore_apply_perf_context_time_duration_secs_sum{type=\"db_mutex_lock_nanos\"}) / "+
 		"(sum(tikv_raftstore_apply_perf_context_time_duration_secs_count{type=\"db_mutex_lock_nanos\"}) + 1)",
-		&rep.PrevDbMutex, &rep.CurDbMutex, Float64)
+		&rep.PrevDbMutex, &rep.CurDbMutex, typeFloat64)
 	if err != nil {
 		return "", err
 	}
@@ -277,7 +277,7 @@ func (s *scaleOut) mergeReport(lastReport, report string) (plainText string, err
 
 type simulatorBench struct {
 	simPath string
-	c       *Cluster
+	c       *cluster
 	report  string
 }
 
@@ -313,15 +313,15 @@ func (s *simulatorBench) Collect() error {
 	return s.c.SendReport(data, plainText)
 }
 
-func NewSimulator(cluster *Cluster, simCase string) Bench {
+func newSimulator(cluster *cluster, simCase string) bench {
 	path := "/scripts/simulator/" + simCase
 	return &simulatorBench{simPath: path, c: cluster}
 }
 
-func CreateSimulatorCase(cluster *Cluster, simCase string) *Case {
-	return &Case{
-		Generator: NewEmptyGenerator(),
-		Bench:     NewSimulator(cluster, simCase),
+func createSimulatorCase(cluster *cluster, simCase string) *benchCase {
+	return &benchCase{
+		generator: newEmptyGenerator(),
+		bench:     newSimulator(cluster, simCase),
 	}
 }
 

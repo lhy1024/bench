@@ -23,7 +23,7 @@ func (s *testClusterSuite) SetUpSuite(c *C) {
 
 func (s *testClusterSuite) TestScaleOut(c *C) {
 	cluster := bench.NewCluster()
-	cluster.SetApiServer("http://" + mockServerAddr)
+	cluster.SetAPIServer("http://" + mockServerAddr)
 	cluster.SetID("1")
 	cluster.SetName("test")
 
@@ -33,7 +33,7 @@ func (s *testClusterSuite) TestScaleOut(c *C) {
 
 func (s *testClusterSuite) TestReport(c *C) {
 	cluster := bench.NewCluster()
-	cluster.SetApiServer("http://" + mockServerAddr)
+	cluster.SetAPIServer("http://" + mockServerAddr)
 	cluster.SetID("1")
 	cluster.SetName("test")
 

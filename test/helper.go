@@ -29,7 +29,10 @@ func newHandler() *handler {
 }
 
 func (h *handler) handleResource(w http.ResponseWriter, r *http.Request) {
-	h.r.JSON(w, http.StatusOK, h.resources)
+	err := h.r.JSON(w, http.StatusOK, h.resources)
+	if err != nil {
+		log.Warn("handleResource meets error", zap.Error(err))
+	}
 }
 
 func handleScaleOut(w http.ResponseWriter, r *http.Request) {
@@ -37,21 +40,28 @@ func handleScaleOut(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) getResults(w http.ResponseWriter, r *http.Request) {
+	var err error
 	if len(h.reports) == 0 {
-		h.r.JSON(w, http.StatusOK, h.reports)
+		err = h.r.JSON(w, http.StatusOK, h.reports)
 	} else {
-		h.r.JSON(w, http.StatusOK, h.reports[:1])
+		err = h.r.JSON(w, http.StatusOK, h.reports[:1])
+	}
+	if err != nil {
+		log.Warn("getResults meets error", zap.Error(err))
 	}
 }
 
 func (h *handler) postResults(w http.ResponseWriter, r *http.Request) {
 	var report bench.WorkloadReport
-	err := readJson(r.Body, &report)
+	err := readJSON(r.Body, &report)
 	if err != nil {
-		h.r.JSON(w, http.StatusBadGateway, err.Error())
+		err = h.r.JSON(w, http.StatusBadGateway, err.Error())
 	} else {
 		h.reports = append(h.reports, report)
-		h.r.JSON(w, http.StatusOK, "")
+		err = h.r.JSON(w, http.StatusOK, "")
+	}
+	if err != nil {
+		log.Warn("postResults meets error", zap.Error(err))
 	}
 }
 
@@ -83,7 +93,7 @@ func mockServer() {
 	}
 }
 
-func readJson(r io.ReadCloser, data interface{}) error {
+func readJSON(r io.ReadCloser, data interface{}) error {
 	var err error
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
