@@ -61,11 +61,11 @@ func (l *ycsb) split() error {
 	if err != nil {
 		return err
 	}
-	res, err := conn.Execute("split table test_go_ycsb BETWEEN (0) AND (9223372036854775807) REGIONS 1000;")
+	_, err = conn.Execute("split table test_go_ycsb BETWEEN (0) AND (9223372036854775807) REGIONS 1000;")
 	if err != nil {
 		return err
 	}
-	res, err = conn.Execute("show table test_go_ycsb regions;")
+	res, err := conn.Execute("show table test_go_ycsb regions;")
 	if err != nil {
 		return err
 	}

@@ -97,7 +97,7 @@ func (c *Cluster) getAllResource() ([]ResourceRequestItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	resources := make([]ResourceRequestItem, 0, 0)
+	resources := make([]ResourceRequestItem, 0)
 	err = json.Unmarshal([]byte(resp), &resources)
 	return resources, err
 }
@@ -160,7 +160,7 @@ func (c *Cluster) GetLastReport() (*WorkloadReport, error) {
 		return nil, err
 	}
 
-	reports := make([]WorkloadReport, 0, 0)
+	reports := make([]WorkloadReport, 0)
 	err = json.Unmarshal([]byte(resp), &reports)
 	if err != nil || len(reports) == 0 {
 		return nil, err
