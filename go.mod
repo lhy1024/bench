@@ -17,10 +17,10 @@ require (
 	github.com/sasha-s/go-deadlock v0.2.0
 	github.com/siddontang/go-log v0.0.0-20190221022429-1e957dd83bed // indirect
 	github.com/siddontang/go-mysql v1.1.0
-	github.com/swaggo/swag v1.6.7
 	github.com/unrolled/render v1.0.3
 	github.com/yookoala/realpath v1.0.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.16.0
 	golang.org/x/tools v0.0.0-20200225230052-807dcd883420
+	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 )

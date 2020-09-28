@@ -1,4 +1,4 @@
-BENCH_PKG := github.com/tikv/pd
+BENCH_PKG := github.com/lhy1024/bench
 TEST_PKGS := $(shell find . -iname "*_test.go" -exec dirname {} \; | \
                      sort -u | sed -e "s/^\./github.com\/lhy1024\/bench/")
 
@@ -17,6 +17,8 @@ install-go-tools:
 	@mkdir -p $(GO_TOOLS_BIN_PATH)
 	@which golangci-lint >/dev/null 2>&1 || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GO_TOOLS_BIN_PATH) v1.27.0
 	@grep '_' tools.go | sed 's/"//g' | awk '{print $$2}' | xargs go install
+
+ci: build check test
 
 build:
 	GO111MODULE=on go build -o ./bin/bench -v
