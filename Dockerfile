@@ -7,6 +7,7 @@ RUN apk add --no-cache \
     curl \
     gcc \
     g++
+
 ENV GO111MODULE=on
 WORKDIR /src
 COPY . .
@@ -22,7 +23,7 @@ RUN apk add --no-cache \
     curl \
     gcc \
     g++
-   
+
 RUN mkdir -p /go/src/github.com/tikv/pd
 WORKDIR /go/src/github.com/tikv/pd
 

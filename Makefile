@@ -1,17 +1,15 @@
 BENCH_PKG := github.com/lhy1024/bench
 TEST_PKGS := $(shell find . -iname "*_test.go" -exec dirname {} \; | \
                      sort -u | sed -e "s/^\./github.com\/lhy1024\/bench/")
-
 PACKAGES := go list ./...
 PACKAGE_DIRECTORIES := $(PACKAGES) | sed 's|$(BENCH_PKG)/||'
 GO_CHECKER := awk '{ print } END { if (NR > 0) { exit 1 } }'
-
 GO_TOOLS_BIN_PATH := $(shell pwd)/.tools/bin
 PATH := $(GO_TOOLS_BIN_PATH):$(PATH)
 SHELL := env PATH='$(PATH)' GOBIN='$(GO_TOOLS_BIN_PATH)' /bin/bash
 OVERALLS := overalls
-
 BUILD_BIN_PATH := $(shell pwd)/bin
+
 default: build
 
 install-go-tools: export GO111MODULE=on
@@ -23,15 +21,18 @@ install-go-tools:
 ci: build check test
 
 build:
+	@echo "build"
 	GO111MODULE=on go build -o $(BUILD_BIN_PATH)/bench cmd/main.go
 
 test: install-go-tools
+	@echo "test"
 	GO111MODULE=on go test $(TEST_PKGS)
 
 check:install-go-tools static lint tidy
 
 static: export GO111MODULE=on
 static:
+	@echo "static"
 	gofmt -s -l -d $$($(PACKAGE_DIRECTORIES)) 2>&1 | $(GO_CHECKER)
 	golangci-lint run $$($(PACKAGE_DIRECTORIES))
 
