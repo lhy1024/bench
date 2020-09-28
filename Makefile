@@ -9,7 +9,9 @@ GO_CHECKER := awk '{ print } END { if (NR > 0) { exit 1 } }'
 GO_TOOLS_BIN_PATH := $(shell pwd)/.tools/bin
 PATH := $(GO_TOOLS_BIN_PATH):$(PATH)
 SHELL := env PATH='$(PATH)' GOBIN='$(GO_TOOLS_BIN_PATH)' /bin/bash
+OVERALLS := overalls
 
+BUILD_BIN_PATH := $(shell pwd)/bin
 default: build
 
 install-go-tools: export GO111MODULE=on
@@ -21,7 +23,7 @@ install-go-tools:
 ci: build check test
 
 build:
-	GO111MODULE=on go build -o ./bin/bench -v
+	GO111MODULE=on go build -o $(BUILD_BIN_PATH)/bench cmd/main.go
 
 test: install-go-tools
 	GO111MODULE=on go test $(TEST_PKGS)
