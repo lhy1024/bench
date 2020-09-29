@@ -283,6 +283,18 @@ type simulatorBench struct {
 
 func (s *simulatorBench) Run() error {
 	cmd := utils.NewCommand(s.simPath, s.c.pdAddr)
+	limit := os.Getenv("STORE_LIMIT")
+	if limit == "" {
+		limit = "2000"
+	}
+	ctl := utils.NewCommand("/bin/pd-ctl", "store", "limit", "all", limit)
+	go func() {
+		time.Sleep(3 * time.Second)
+		_, err := ctl.Run()
+		if err != nil {
+			log.Error("pd-ctl", zap.Error(err))
+		}
+	}()
 	out, err := cmd.Run()
 	if err != nil {
 		return err

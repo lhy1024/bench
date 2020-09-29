@@ -30,6 +30,9 @@
             "sim-import"
         ],
         "rri_item_id": 1,
-        "artifact_dir": "/artifacts"
+        "artifact_dir": "/artifacts",
+        "envs": {
+            "STORE_LIMIT": "2000"
+        }
     }
 }
