@@ -44,3 +44,13 @@ tidy:
 	@echo "go mod tidy"
 	GO111MODULE=on go mod tidy
 	git diff --quiet go.mod go.sum
+
+travis_coverage: export GO111MODULE=on
+travis_coverage:
+ifeq ("$(TRAVIS_COVERAGE)", "1")
+	@$(FAILPOINT_ENABLE)
+	CGO_ENABLED=1 $(OVERALLS) -concurrency=8 -project=github.com/tikv/pd -covermode=count -ignore='.git,vendor' -- -coverpkg=./... || { $(FAILPOINT_DISABLE); exit 1; }
+	@$(FAILPOINT_DISABLE)
+else
+	@echo "coverage only runs in travis."
+endif
