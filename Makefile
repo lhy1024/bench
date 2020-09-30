@@ -44,3 +44,11 @@ tidy:
 	@echo "go mod tidy"
 	GO111MODULE=on go mod tidy
 	git diff --quiet go.mod go.sum
+
+travis_coverage: export GO111MODULE=on
+travis_coverage:
+ifeq ("$(TRAVIS_COVERAGE)", "1")
+	CGO_ENABLED=1 $(OVERALLS) -concurrency=8 -project=github.com/lhy1024/bench -covermode=count -ignore='.git,vendor' -- -coverpkg=./...
+else
+	@echo "coverage only runs in travis."
+endif

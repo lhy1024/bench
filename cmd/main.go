@@ -11,7 +11,7 @@ import (
 var (
 	withBench    = flag.Bool("bench", true, "bench mode, it will bench this workload-scale-out")
 	withGenerate = flag.Bool("generate", false, "generate mode,it will allow bench in empty database or only generate data")
-	caseName     = flag.String("case", "", "case name, support list:scale-out,tpcc")
+	caseName     = flag.String("case", "", "case name, support list:scale-out, tpcc")
 )
 
 func main() {
