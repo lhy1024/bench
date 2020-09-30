@@ -48,9 +48,7 @@ tidy:
 travis_coverage: export GO111MODULE=on
 travis_coverage:
 ifeq ("$(TRAVIS_COVERAGE)", "1")
-	@$(FAILPOINT_ENABLE)
-	CGO_ENABLED=1 $(OVERALLS) -concurrency=8 -project=github.com/tikv/pd -covermode=count -ignore='.git,vendor' -- -coverpkg=./... || { $(FAILPOINT_DISABLE); exit 1; }
-	@$(FAILPOINT_DISABLE)
+	CGO_ENABLED=1 $(OVERALLS) -concurrency=8 -project=github.com/lhy1024/bench -covermode=count -ignore='.git,vendor' -- -coverpkg=./...
 else
 	@echo "coverage only runs in travis."
 endif
