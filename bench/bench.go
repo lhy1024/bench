@@ -287,7 +287,7 @@ func (s *simulatorBench) Run() error {
 	if limit == "" {
 		limit = "2000"
 	}
-	ctl := utils.NewCommand("/bin/pd-ctl", "store", "limit", "all", limit)
+	ctl := utils.NewCommand("/bin/pd-ctl", "--pd", s.c.pdAddr, "store", "limit", "all", limit)
 	go func() {
 		time.Sleep(3 * time.Second)
 		_, err := ctl.Run()
