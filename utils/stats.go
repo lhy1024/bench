@@ -33,7 +33,8 @@ var scaleOutStatsOrder = []string{
 	"CurDbMutex",
 }
 
-type scaleOutOnce struct {
+// ScaleOutOnce is scale out stats once
+type ScaleOutOnce struct {
 	BalanceInterval        int     `json:"BalanceInterval"`
 	PrevBalanceLeaderCount int     `json:"PrevBalanceLeaderCount"`
 	PrevBalanceRegionCount int     `json:"PrevBalanceRegionCount"`
@@ -49,16 +50,18 @@ type scaleOutOnce struct {
 	CurDbMutex             float64 `json:"CurDbMutex"`
 }
 
-type scaleOutStats struct {
+// ScaleOutStats is a compare of two ScaleOutOnce
+type ScaleOutStats struct {
 	compareStats
 	statsMap *map[string][2]float64
 }
 
-func (s *scaleOutStats) Init(last, cur string) error {
+// Init data
+func (s *ScaleOutStats) Init(last, cur string) error {
 	if last == "" || cur == "" {
 		return nil
 	}
-	var lastStats, curStats scaleOutOnce
+	var lastStats, curStats ScaleOutOnce
 	var err error
 	err = json.Unmarshal([]byte(last), &lastStats)
 	if err != nil {
@@ -87,12 +90,14 @@ func (s *scaleOutStats) Init(last, cur string) error {
 	return nil
 }
 
-func (s *scaleOutStats) CollectFrom(fileName string) error {
+// CollectFrom file report
+func (s *ScaleOutStats) CollectFrom(fileName string) error {
 	// todo: load from file
 	return nil
 }
 
-func (s *scaleOutStats) RenderTo(fileName string) error {
+// RenderTo visualization
+func (s *ScaleOutStats) RenderTo(fileName string) error {
 	m := *s.statsMap
 	var lastData, curData []float64
 	for _, stat := range scaleOutStatsOrder {
@@ -113,7 +118,8 @@ func (s *scaleOutStats) RenderTo(fileName string) error {
 	return bar.Render(f)
 }
 
-func (s *scaleOutStats) Report() (string, error) {
+// Report stats
+func (s *ScaleOutStats) Report() (string, error) {
 	m := *s.statsMap
 	text := "Label:\n"
 	for i, s := range scaleOutStatsOrder {

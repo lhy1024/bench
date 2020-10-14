@@ -50,6 +50,7 @@
             "scale-out"
         ],
         "restore_path": "mybucket/ycsb",
+        "artifact_dir": "/artifacts",
         "rri_item_id": 1
     }
 }
