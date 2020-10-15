@@ -243,7 +243,7 @@ func (s *scaleOut) mergeReport(lastReport, report string) (plainText string, err
 	if err != nil {
 		return
 	}
-	plainText += header
+	vis := createArtReport("visualization", "label", header)
 	title := "```diff  \n@@\t\t\tBenchmark diff\t\t\t@@\n"
 	splitLine := ""
 	for i := 0; i < 58; i++ {
@@ -252,6 +252,8 @@ func (s *scaleOut) mergeReport(lastReport, report string) (plainText string, err
 	splitLine += "\n"
 	plainText += title
 	plainText += splitLine
+	plainText += vis
+	plainText += "\n"
 	balanceTag := "balance:  \n"
 	scheduleTag := "schedule:  \n"
 	compactionTag := "compaction:  \n"
@@ -311,9 +313,9 @@ func (s *simulatorBench) Collect() error {
 	var data string
 	if lastReport == nil { //first send
 		plainText = ""
-		data = createSimReport("last", s.report)
+		data = createArtReport("last", "simulator report", s.report)
 	} else { //second send
-		data = createSimReport("cur", s.report)
+		data = createArtReport("cur", "simulator report", s.report)
 		plainText = "```diff  \n"
 		plainText += lastReport.Data
 		plainText += data
@@ -335,10 +337,10 @@ func createSimulatorCase(cluster *cluster, simCase string) *benchCase {
 	}
 }
 
-func createSimReport(head, report string) string {
+func createArtReport(head, note, report string) string {
 	plainText := head + ":  \n"
 	plainText += "\t*artifacts link: " + os.Getenv("ARTIFACT_URL") + "/workload.tar.gz   \n"
-	plainText += "\t*simulator report:  \n"
+	plainText += "\t*" + note + "  \n"
 	plainText += report + "  \n"
 
 	return plainText
