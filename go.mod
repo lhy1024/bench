@@ -6,7 +6,6 @@ require (
 	github.com/go-echarts/go-echarts v1.0.0
 	github.com/go-playground/overalls v0.0.0-20191218162659-7df9f728c018
 	github.com/gorilla/mux v1.8.0
-	github.com/jinzhu/gorm v1.9.16
 	github.com/mgechev/revive v1.0.2
 	github.com/petermattis/goid v0.0.0-20180202154549-b0b1615b78e5 // indirect
 	github.com/pingcap/check v0.0.0-20190102082844-67f458068fc8
@@ -24,4 +23,5 @@ require (
 	go.uber.org/zap v1.16.0
 	golang.org/x/tools v0.0.0-20200225230052-807dcd883420
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
+	gorm.io/gorm v1.20.4
 )
