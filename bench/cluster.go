@@ -15,7 +15,6 @@ import (
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 const (
@@ -26,7 +25,7 @@ const (
 
 // ResourceRequestItem ...
 type ResourceRequestItem struct {
-	gorm.Model
+	ID           uint   `gorm:"primarykey"`
 	ItemID       uint   `gorm:"column:item_id;unique;not null" json:"item_id"`
 	InstanceType string `gorm:"column:instance_type;type:varchar(100);not null" json:"instance_type"`
 	RRID         uint   `gorm:"column:rr_id;not null" json:"rr_id"`
@@ -47,7 +46,7 @@ func (r *ResourceRequestItem) hasNum(style string) (num int) {
 
 // WorkloadReport ...
 type WorkloadReport struct {
-	gorm.Model
+	ID        uint    `gorm:"primarykey"`
 	CRID      uint    `gorm:"column:cr_id;not null" json:"cr_id"`
 	Data      string  `gorm:"column:result;type:longtext;not null" json:"data"`
 	PlainText *string `gorm:"column:plaintext" json:"plaintext,omitempty"`

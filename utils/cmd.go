@@ -22,7 +22,7 @@ func NewCommand(path string, args ...string) *Command {
 // Run run command and return result
 func (command *Command) Run() (string, error) {
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Cmd{Path: command.path, Args: command.args}
+	cmd := exec.Command(command.path, command.args...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()
